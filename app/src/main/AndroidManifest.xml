@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="in.izzulmak.inspense" >
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme" >
+        <activity
+            android:name=".MainActivity"
+            android:label="@string/app_name" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".AddincomeActivity"
+            android:label="@string/title_activity_addincome"
+            android:parentActivityName=".MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="in.izzulmak.inspense.MainActivity" />
+        </activity>
+        <activity
+            android:name=".ChangebaseaccountActivity"
+            android:label="@string/title_activity_changebaseaccount"
+            android:parentActivityName=".MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="in.izzulmak.inspense.MainActivity" />
+        </activity>
+        <activity
+            android:name=".AddexpenseActivity"
+            android:label="@string/title_activity_addexpense"
+            android:parentActivityName=".MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="in.izzulmak.inspense.MainActivity" />
+        </activity>
+        <activity
+            android:name=".DebugActivity"
+            android:label="@string/title_activity_debug"
+            android:parentActivityName=".MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="in.izzulmak.inspense.MainActivity" />
+        </activity>
+        <activity
+            android:name=".EditexpenseActivity"
+            android:label="@string/title_activity_editexpense"
+            android:parentActivityName=".MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="in.izzulmak.inspense.MainActivity" />
+        </activity>
+        <activity
+            android:name=".EditincomeActivity"
+            android:label="@string/title_activity_editincome"
+            android:parentActivityName=".MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="in.izzulmak.inspense.MainActivity" />
+        </activity>
+    </application>
+
+</manifest>
