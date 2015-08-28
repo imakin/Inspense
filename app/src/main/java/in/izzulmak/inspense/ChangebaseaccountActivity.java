@@ -98,7 +98,7 @@ public class ChangebaseaccountActivity extends ActionBarActivity {
                     @Override
                     public void onClick(View v) {
                         Intent i = new Intent();
-                        i.putExtra("v_new_baseaccount_name", ChangebaseaccountActivity.baseAccount);
+                        i.putExtra("v_new_baseaccount_id", ChangebaseaccountActivity.baseAccount);
                         setResult(RESULT_OK,i);
                         finish();
                     }

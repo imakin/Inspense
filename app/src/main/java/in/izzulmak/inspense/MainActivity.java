@@ -4,6 +4,7 @@ import java.text.NumberFormat;
 import java.util.Calendar;
 import java.util.Locale;
 
+
 import android.app.Activity;
 import android.content.Intent;
 import android.database.Cursor;
@@ -24,6 +25,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -51,6 +53,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
 
         dbmain = openOrCreateDatabase(getResources().getString(R.string.databasename),MODE_PRIVATE,null);
 
@@ -97,6 +101,10 @@ public class MainActivity extends AppCompatActivity {
         mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setAdapter(mSectionsPagerAdapter);
         //refreshBaseAccount();
+        if (baseAccount_pos!=0)
+        {
+            mViewPager.setCurrentItem(baseAccount_pos);
+        }
     }
 
 
@@ -133,7 +141,7 @@ public class MainActivity extends AppCompatActivity {
         switch (requestCode) {
             case (ROOM_CHANGEBASEACCOUNT_ID) :
             {
-                int newbaseaccount = data.getIntExtra("v_new_baseaccount_name",-1);
+                int newbaseaccount = data.getIntExtra("v_new_baseaccount_id",-1);
                 if (newbaseaccount!=-1) {
                     dbmain.execSQL("UPDATE settings SET value=" + newbaseaccount + " WHERE name='base_account';");
 
@@ -165,6 +173,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void gotoDebug(MenuItem item)
     {
+        baseAccount_pos = mViewPager.getCurrentItem();
         Intent mi = new Intent(MainActivity.this, DebugActivity.class);
         MainActivity.this.startActivity(mi);
     }
@@ -205,6 +214,13 @@ public class MainActivity extends AppCompatActivity {
     {
         refreshBaseAccount();
         Intent mi = new Intent(MainActivity.this, EditincomeActivity.class);
+        MainActivity.this.startActivity(mi);
+    }
+
+    public void gotoAccount(MenuItem item)
+    {
+        refreshBaseAccount();
+        Intent mi = new Intent(MainActivity.this, AccountActivity.class);
         MainActivity.this.startActivity(mi);
     }
     /**

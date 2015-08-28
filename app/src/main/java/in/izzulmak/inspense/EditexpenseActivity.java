@@ -39,28 +39,34 @@ public class EditexpenseActivity extends ActionBarActivity {
         int mYear = c.get(Calendar.YEAR);
         int mMonth = c.get(Calendar.MONTH)+1;
         String thismonth = ""+mYear+"-"+String.format("%02d",mMonth)+"-01";
-        Cursor dbv_dates = db.rawQuery("SELECT date FROM incomesexpenses WHERE type LIKE '%EXPENSE%' AND date BETWEEN DATE('"+thismonth+"') AND DATE('"+thismonth+"','+1 month', '-1 day') GROUP BY date; ",null);
-        while (dbv_dates.moveToNext())
+        Cursor dbc_dates = db.rawQuery("SELECT date FROM incomesexpenses WHERE type LIKE '%EXPENSE%' AND date BETWEEN DATE('"+thismonth+"') AND DATE('"+thismonth+"','+1 month', '-1 day') GROUP BY date; ",null);
+        while (dbc_dates.moveToNext())
         {
-            String thisdate = dbv_dates.getString(0);
+            String thisdate = dbc_dates.getString(0);
+
+            Cursor dbc_thisdatesum = db.rawQuery("SELECT sum(amount) FROM incomesexpenses " +
+                    "WHERE type LIKE 'EXPENSE' AND date='"+thisdate+"' ",null);
+            int thisdatesum = 0;
+            if (dbc_thisdatesum.moveToNext())
+                thisdatesum = dbc_thisdatesum.getInt(0);
 
             Button bt = new Button (container.getContext());
-            bt.setText(thisdate);
+            bt.setText(thisdate + " ("+thisdatesum+")");
             container.addView(bt);
 
             final LinearLayout ll = new LinearLayout(container.getContext());
             ll.setOrientation(LinearLayout.VERTICAL);
 
-            final Cursor dbv_thisdate = db.rawQuery(
+            final Cursor dbc_thisdate = db.rawQuery(
                     "SELECT incomesexpenses.*, accounts.name FROM incomesexpenses " +
                         "LEFT JOIN accounts ON incomesexpenses.from_account_id=accounts.id " +
                         "WHERE incomesexpenses.type LIKE '%EXPENSE%' " +
                             "AND incomesexpenses.date='"+thisdate+"' ORDER BY date;"
                     , null);
             int btcid = 500;
-            while (dbv_thisdate.moveToNext())
+            while (dbc_thisdate.moveToNext())
             {
-                Integer thisindex = dbv_thisdate.getInt(dbv_thisdate.getColumnIndex("id"));
+                Integer thisindex = dbc_thisdate.getInt(dbc_thisdate.getColumnIndex("id"));
 
                 ToggleButton btc = new ToggleButton(ll.getContext());
                 ViewGroup.LayoutParams lp = new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -68,7 +74,7 @@ public class EditexpenseActivity extends ActionBarActivity {
                 btc.setId(100 + thisindex.intValue()); //-- the edit each item index is 100+`incomesexpenses`.`id`
                 incomesexpenseslist_ids.add(thisindex);
                 btc.setBackgroundResource(R.layout.listbutton);
-                String thetext = dbv_thisdate.getString(dbv_thisdate.getColumnIndex("accounts.name")) + " \t " + dbv_thisdate.getString(dbv_thisdate.getColumnIndex("incomesexpenses.amount"));
+                String thetext = dbc_thisdate.getString(dbc_thisdate.getColumnIndex("accounts.name")) + " \t " + dbc_thisdate.getString(dbc_thisdate.getColumnIndex("incomesexpenses.amount"));
                 btc.setText(thetext);
                 btc.setTextOff(thetext);
                 btc.setTextOn("[ "+thetext+" ]");
@@ -80,7 +86,7 @@ public class EditexpenseActivity extends ActionBarActivity {
             container.addView(ll);
             LinearLayout.LayoutParams lllp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0);
             ll.setLayoutParams(lllp);
-            dbv_thisdate.close();
+            dbc_thisdate.close();
             bt.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -94,7 +100,7 @@ public class EditexpenseActivity extends ActionBarActivity {
                 }
             });
         }
-        dbv_dates.close();
+        dbc_dates.close();
         db.close();
     }
 
