@@ -27,6 +27,7 @@
     <string name="save">Save</string>
     <string name="summary">Summary:</string>
     <string name="balance">Balance</string>
+    <string name="last_balance">Last Period Balance</string>
     <string name="total_income">Total Income</string>
     <string name="total_expense">Total Expense</string>
     <string name="total_transfer_income">Total Transfer Income</string>

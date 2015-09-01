@@ -30,14 +30,65 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/summary" />
-            <Button
-                android:id="@+id/bt_closebookchange"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:text="1 to 1"
-                android:onClick="changeCloseBookDate"
-                style="@android:style/Holo.ButtonBar" />
+                android:orientation="horizontal"
+                android:gravity="center_horizontal">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Period is: "
+                    />
+                <Button
+                    android:id="@+id/bt_closebookchange"
+                    android:layout_width="wrap_content"
+                    android:layout_height="35dp"
+                    android:text="1 to 1"
+                    android:onClick="changeCloseBookDate"
+                    android:background="#ffffffff"
+                    android:paddingTop="0px"
+                    android:textAllCaps="false"
+                    />
+            </LinearLayout>
 
+
+
+            <!-- LAST MONTH BALANCE -->
+            <!-- BALANCE SUMMARY -->
+            <LinearLayout
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="10dp">
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="start">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/last_balance" />
+
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="end">
+                    <TextView
+                        android:id="@+id/tv_LastSumBalance"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="435,000"
+                        android:background="#00ffffff"
+                        android:textAllCaps="false"
+                        />
+
+                </LinearLayout>
+
+            </LinearLayout>
             <LinearLayout
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
@@ -165,6 +216,8 @@
                 </LinearLayout>
             </LinearLayout>
 
+
+            <!-- BALANCE SUMMARY -->
             <LinearLayout
                 android:background="#ff000000"
                 android:layout_marginTop="10dp"
@@ -204,6 +257,8 @@
                 </LinearLayout>
 
             </LinearLayout>
+
+
         </LinearLayout>
 
         <LinearLayout

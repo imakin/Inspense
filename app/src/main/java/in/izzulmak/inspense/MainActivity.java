@@ -112,7 +112,6 @@ public class MainActivity extends AppCompatActivity {
         dbv_baseAccount_name = dbc_baseAccount.getString(2);
         dbc_baseAccount.close();
 
-
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
@@ -371,64 +370,80 @@ public class MainActivity extends AppCompatActivity {
             MainActivity.dbv_baseAccount_name = baseAccountName;
 
             TextView tv_Accountname = (TextView) rootView.findViewById(R.id.tv_Accountname);
-            tv_Accountname.setText("Base account: "+dbv_baseAccount_name);
+            tv_Accountname.setText("Base account: " + dbv_baseAccount_name);
 
             Button bt_closebookchange = (Button) rootView.findViewById(R.id.bt_closebookchange);
-            bt_closebookchange.setText(Integer.toString(closeboook_date)+" to "+Integer.toString(closeboook_date));
+            bt_closebookchange.setText(Integer.toString(closeboook_date) + " to " + Integer.toString(closeboook_date));
             updateBalanceTM();
 
             return rootView;
         }
 
-        public static Double getThisMonthSummary(String type)
-        //-- type: 'INCOME', 'EXPENSE'
-        {
-            final Calendar c = Calendar.getInstance();
-            int mYear = c.get(Calendar.YEAR);
-            int mMonth = c.get(Calendar.MONTH)+1;
-            int mDay = c.get(Calendar.DAY_OF_MONTH);
-            String thismonth = ""+mYear+"-"+String.format("%02d",mMonth)+"-"+String.format("%02d",closeboook_date);
-
-            Cursor dbc_Income;
-            if (type=="TRANSFERINCOME")
-            {//--this one is a bit different, (searching TRANSFEREXPENSE)
-                dbc_Income = dbmain.rawQuery("SELECT SUM(amount) FROM incomesexpenses WHERE from_account_id='" + MainActivity.dbv_baseAccount_id + "' AND type='TRANSFEREXPENSE' AND date BETWEEN DATE('" + thismonth + "') AND DATE('" + thismonth + "','+1 month', '-1 day'); ", null);
-            }
-            else //--- for INCOME, EXPENSE, & TRANSFEREXPENSE
-                dbc_Income = dbmain.rawQuery("SELECT SUM(amount) FROM incomesexpenses WHERE base_account_id='" + MainActivity.dbv_baseAccount_id + "' AND type='" + type + "' AND date BETWEEN DATE('" + thismonth + "') AND DATE('" + thismonth + "','+1 month', '-1 day'); ", null);
-
-            if (dbc_Income.moveToNext())
-            {
-                Double hasil = dbc_Income.getDouble(0);
-                dbc_Income.close();
-                return hasil;
-            }
-            else {
-                dbc_Income.close();
-                return 0.0;//*/
-            }
-        }
         public static void updateBalanceTM()
         {
             NumberFormat nf = NumberFormat.getCurrencyInstance();
             Double in,transIn;
             Double ex,transEx;
-            in = getThisMonthSummary("INCOME");
-            ex = getThisMonthSummary("EXPENSE");
-            transIn = getThisMonthSummary("TRANSFERINCOME");
-            transEx = getThisMonthSummary("TRANSFEREXPENSE");
+            in = getMonthSummary("INCOME",0);
+            ex = getMonthSummary("EXPENSE",0);
+            transIn = getMonthSummary("TRANSFERINCOME",0);
+            transEx = getMonthSummary("TRANSFEREXPENSE",0);
+
+            Double lin = getMonthSummary("INCOME",-1);
+            Double lex = getMonthSummary("EXPENSE",-1);
+            Double ltin = getMonthSummary("TRANSFERINCOME",-1);
+            Double ltex = getMonthSummary("TRANSFEREXPENSE",-1);
+            Double lastbalance = lin +ltin - lex -ltex;
+
+
             ((TextView) rootView.findViewById(R.id.tv_SumIncome)).setText(nf.format(in));
             ((TextView) rootView.findViewById(R.id.tv_SumExpense)).setText(nf.format(ex));
 
             ((TextView) rootView.findViewById(R.id.tv_SumTransferExpense)).setText(nf.format(transEx));
             ((TextView) rootView.findViewById(R.id.tv_SumTransferIncome)).setText(nf.format(transIn));
 
-            ((TextView) rootView.findViewById(R.id.tv_SumBalance)).setText(nf.format(in + transIn - ex - transEx));
+            ((TextView) rootView.findViewById(R.id.tv_LastSumBalance)).setText(nf.format(lastbalance));
+
+            ((TextView) rootView.findViewById(R.id.tv_SumBalance)).setText(nf.format(lastbalance+in + transIn - ex - transEx));
         }
         public static void refreshPage()
         {
             updateBalanceTM();
             ((Button) rootView.findViewById(R.id.bt_closebookchange)).setText(""+MainActivity.closeboook_date+" to "+MainActivity.closeboook_date);
+        }
+        public static Double getMonthSummary(String type, int month)
+        //-- type: 'INCOME', 'EXPENSE',
+        //-- month is month number 1=jan, 2=feb, 3=mar
+        //--    or relative to current month 0=thismonth -1=last month, -2 before last month
+        {
+            final Calendar c = Calendar.getInstance();
+            int mYear = c.get(Calendar.YEAR);
+            int mMonth;
+            if (month>0)
+                mMonth = month;
+            else
+                mMonth = c.get(Calendar.MONTH) + 1 + month;
+            int mDay = c.get(Calendar.DAY_OF_MONTH);
+            String thismonth = ""+mYear+"-"+String.format("%02d",mMonth)+"-"+String.format("%02d",closeboook_date);
+
+            Cursor dbc;
+            if (type=="TRANSFERINCOME")
+            {//--this one is a bit different, (searching TRANSFEREXPENSE)
+                dbc = dbmain.rawQuery("SELECT SUM(amount) FROM incomesexpenses WHERE from_account_id='" + MainActivity.dbv_baseAccount_id + "' AND type='TRANSFEREXPENSE' AND date BETWEEN DATE('" + thismonth + "') AND DATE('" + thismonth + "','+1 month', '-1 day'); ", null);
+            }
+            else //--- for INCOME, EXPENSE, & TRANSFEREXPENSE
+                dbc = dbmain.rawQuery("SELECT SUM(amount) FROM incomesexpenses WHERE base_account_id='" + MainActivity.dbv_baseAccount_id + "' AND type='" + type + "' AND date BETWEEN DATE('" + thismonth + "') AND DATE('" + thismonth + "','+1 month', '-1 day'); ", null);
+
+            if (dbc.moveToNext())
+            {
+                Double hasil = dbc.getDouble(0);
+                dbc.close();
+                return hasil;
+            }
+            else {
+                dbc.close();
+                return 0.0;//*/
+            }
         }
     }
 
