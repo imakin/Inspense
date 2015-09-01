@@ -1,14 +1,19 @@
 package in.izzulmak.inspense;
 
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Locale;
 
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
@@ -31,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
 
     static int dbv_baseAccount_id;
     static int baseAccount_pos;//--page position
+    public static int closeboook_date;
     static String dbv_baseAccount_name;
     final static int ROOM_ADDEXPENSE_ID = 0;
     final static int ROOM_ADDINCOME_ID = 1;
@@ -87,6 +93,19 @@ public class MainActivity extends AppCompatActivity {
         }
         dbc_Accounttable.close();
 
+        //-- close book date, where sum is restarted
+        Cursor dbc_closedate = dbmain.rawQuery("SELECT value FROM settings WHERE name='close_date';",null);
+        if (dbc_closedate.moveToNext())
+        {
+            closeboook_date = dbc_closedate.getInt(0);
+        }
+        else
+        {
+            dbmain.execSQL("INSERT INTO settings VALUES('close_date', 1)");
+            closeboook_date = 1;
+        }
+
+        //--active baseaccount, deprecated. we use baseAccount_pos now
         Cursor dbc_baseAccount = dbmain.rawQuery("SELECT settings.value,settings.name,accounts.name FROM settings,accounts WHERE settings.name='base_account' AND accounts.id=settings.value",null);
         dbc_baseAccount.moveToNext();
         dbv_baseAccount_id = dbc_baseAccount.getInt(0);
@@ -104,7 +123,22 @@ public class MainActivity extends AppCompatActivity {
         if (baseAccount_pos!=0)
         {
             mViewPager.setCurrentItem(baseAccount_pos);
+            PlaceholderFragment.updateBalanceTM();
         }
+        mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                PlaceholderFragment.refreshPage();
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+            }
+        });
     }
 
 
@@ -162,7 +196,7 @@ public class MainActivity extends AppCompatActivity {
     {
         int position = mViewPager.getCurrentItem();
         baseAccount_pos = position;
-        Cursor dbc_Base = dbmain.rawQuery("SELECT id,name FROM accounts WHERE type='BASE' ",null);
+        Cursor dbc_Base = dbmain.rawQuery("SELECT id,name FROM accounts WHERE enabled=1 AND type='BASE' ",null);
         if (position<dbc_Base.getCount())
         {
             dbc_Base.moveToPosition(position);
@@ -194,13 +228,44 @@ public class MainActivity extends AppCompatActivity {
         mi.putExtra("v_account_id", dbv_baseAccount_id);
         MainActivity.this.startActivityForResult(mi, ROOM_ADDEXPENSE_ID);
     }
-    public void gotoChangebaseaccount(View view)
+    public void gotoEditaccount(View view)
     {
         refreshBaseAccount();
-        Intent mi = new Intent(MainActivity.this, ChangebaseaccountActivity.class);
-        mi.putExtra("v_baseaccount_name",dbv_baseAccount_name);
-        mi.putExtra("v_baseaccount_id",dbv_baseAccount_id);
+        Intent mi = new Intent(MainActivity.this, AccountActivity.class);
         MainActivity.this.startActivityForResult(mi,ROOM_CHANGEBASEACCOUNT_ID);
+    }
+    public void changeCloseBookDate(View view)
+    {
+        ArrayList<CharSequence> al_dates = new ArrayList<CharSequence>();
+        for (int i=1;i<=28;i+=1)
+        {
+            al_dates.add(Integer.toString(i));
+        }
+        CharSequence[] dates = new CharSequence[al_dates.size()];
+        dates = al_dates.toArray(dates);
+        final CharSequence[] fn_dates = dates;
+
+        AlertDialog.Builder selector = new AlertDialog.Builder(MainActivity.this);
+        selector.setTitle("Pick close book date: ");
+        selector.setItems(
+                fn_dates,
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int item) {
+                        int selecteddate = item+1;
+                        MainActivity.closeboook_date = selecteddate;
+                        Button bt_closebookchange = (Button) findViewById(R.id.bt_closebookchange);
+                        bt_closebookchange.setText(Integer.toString(selecteddate)+" to "+Integer.toString(selecteddate));
+                        dbmain.execSQL("UPDATE settings SET value=" + selecteddate + " WHERE name='close_date' ");
+                        PlaceholderFragment.refreshPage();
+
+                        Intent intent = getIntent();
+                        finish();
+                        startActivity(intent);
+                    }
+                }
+        );
+        selector.show();
     }
 
     public void gotoEditexpenseActivity(MenuItem item)
@@ -223,6 +288,8 @@ public class MainActivity extends AppCompatActivity {
         Intent mi = new Intent(MainActivity.this, AccountActivity.class);
         MainActivity.this.startActivity(mi);
     }
+
+
     /**
      * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
      * one of the sections/tabs/pages.
@@ -235,7 +302,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public Fragment getItem(int position) {
-            Cursor dbc_bases = dbmain.rawQuery("SELECT id,name FROM accounts WHERE type='BASE' ", null);
+            Cursor dbc_bases = dbmain.rawQuery("SELECT id,name FROM accounts WHERE enabled=1 AND type='BASE' ", null);
             dbc_bases.moveToPosition(position);
             int baseid = dbc_bases.getInt(0);
             String basename = dbc_bases.getString(1);
@@ -250,7 +317,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public int getCount() {
             // Show 3 total pages.
-            Cursor dbc_bases = dbmain.rawQuery("SELECT name FROM accounts WHERE type='BASE' ", null);
+            Cursor dbc_bases = dbmain.rawQuery("SELECT name FROM accounts WHERE enabled=1 AND type='BASE' ", null);
             int basenum = dbc_bases.getCount();
             dbc_bases.close();
             return basenum;
@@ -305,6 +372,9 @@ public class MainActivity extends AppCompatActivity {
 
             TextView tv_Accountname = (TextView) rootView.findViewById(R.id.tv_Accountname);
             tv_Accountname.setText("Base account: "+dbv_baseAccount_name);
+
+            Button bt_closebookchange = (Button) rootView.findViewById(R.id.bt_closebookchange);
+            bt_closebookchange.setText(Integer.toString(closeboook_date)+" to "+Integer.toString(closeboook_date));
             updateBalanceTM();
 
             return rootView;
@@ -317,7 +387,7 @@ public class MainActivity extends AppCompatActivity {
             int mYear = c.get(Calendar.YEAR);
             int mMonth = c.get(Calendar.MONTH)+1;
             int mDay = c.get(Calendar.DAY_OF_MONTH);
-            String thismonth = ""+mYear+"-"+String.format("%02d",mMonth)+"-01";
+            String thismonth = ""+mYear+"-"+String.format("%02d",mMonth)+"-"+String.format("%02d",closeboook_date);
 
             Cursor dbc_Income;
             if (type=="TRANSFERINCOME")
@@ -355,6 +425,18 @@ public class MainActivity extends AppCompatActivity {
 
             ((TextView) rootView.findViewById(R.id.tv_SumBalance)).setText(nf.format(in + transIn - ex - transEx));
         }
+        public static void refreshPage()
+        {
+            updateBalanceTM();
+            ((Button) rootView.findViewById(R.id.bt_closebookchange)).setText(""+MainActivity.closeboook_date+" to "+MainActivity.closeboook_date);
+        }
+    }
+
+    public void openSettings(MenuItem item)
+    {
+        refreshBaseAccount();
+        Intent mi = new Intent(MainActivity.this, SettingsActivity.class);
+        MainActivity.this.startActivity(mi);
     }
 
 }

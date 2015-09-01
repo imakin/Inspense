@@ -76,7 +76,7 @@ public class AddincomeActivity extends ActionBarActivity {
                 }
         );
 
-        Cursor dbv_accounts = db.rawQuery("SELECT * FROM accounts WHERE type='INCOME';",null);
+        Cursor dbv_accounts = db.rawQuery("SELECT * FROM accounts WHERE enabled=1 AND type='INCOME';",null);
         //-- Make ArrayList and push every needed row value
         ArrayList<CharSequence> ALaccounts_list = new ArrayList<CharSequence>();
         ArrayList<Integer> accounts_listID = new ArrayList<Integer>();

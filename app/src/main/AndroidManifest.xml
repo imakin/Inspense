@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="in.izzulmak.inspense" >
+    package="in.izzulmak.inspense"
+    >
 
     <!-- Include required permissions for Google Mobile Ads to run -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -83,6 +84,22 @@
         <activity
             android:name=".AccountActivity"
             android:label="@string/title_activity_account"
+            android:parentActivityName=".MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="in.izzulmak.inspense.MainActivity" />
+        </activity>
+        <activity
+            android:name=".AccountmanipulateActivity"
+            android:label="@string/title_activity_accountmanipulate"
+            android:parentActivityName=".AccountActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="in.izzulmak.inspense.AccountActivity" />
+        </activity>
+        <activity
+            android:name=".SettingsActivity"
+            android:label="@string/title_activity_settings"
             android:parentActivityName=".MainActivity" >
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"

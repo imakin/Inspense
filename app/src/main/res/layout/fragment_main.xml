@@ -30,6 +30,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/summary" />
+            <Button
+                android:id="@+id/bt_closebookchange"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1 to 1"
+                android:onClick="changeCloseBookDate"
+                style="@android:style/Holo.ButtonBar" />
 
             <LinearLayout
                 android:layout_width="fill_parent"
@@ -236,10 +243,10 @@
                 <Button
                     android:layout_width="fill_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/change_base_account"
-                    android:id="@+id/bt_Changebaseaccount"
+                    android:text="@string/edit_account"
+                    android:id="@+id/bt_Editaccount"
                     android:layout_marginTop="10dp"
-                    android:onClick="gotoChangebaseaccount"/>
+                    android:onClick="gotoEditaccount"/>
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

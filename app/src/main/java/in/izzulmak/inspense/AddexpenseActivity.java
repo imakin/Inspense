@@ -88,7 +88,7 @@ public class AddexpenseActivity extends ActionBarActivity {
                 }
         );
         //-- for normal Expense account
-        Cursor dbv_accounts = db.rawQuery("SELECT * FROM accounts WHERE type='EXPENSE';",null);
+        Cursor dbv_accounts = db.rawQuery("SELECT * FROM accounts WHERE enabled=1 AND type='EXPENSE';",null);
         //-- Make ArrayList and push every needed row value
         ArrayList<CharSequence> ALaccounts_list = new ArrayList<CharSequence>();
         ArrayList<Integer> accounts_listID = new ArrayList<Integer>();
@@ -105,7 +105,7 @@ public class AddexpenseActivity extends ActionBarActivity {
         final ArrayList<Integer> finalAccounts_listID = accounts_listID;
 
         //-- for transfer Expense account
-        Cursor dbv_accountsbase = db.rawQuery("SELECT * FROM accounts WHERE type='BASE';",null);
+        Cursor dbv_accountsbase = db.rawQuery("SELECT * FROM accounts WHERE enabled=1 AND type='BASE';",null);
         ArrayList<CharSequence> ALaccountsbase_list = new ArrayList<CharSequence>();
         ArrayList<Integer> accountsbase_listID = new ArrayList<Integer>();
         while (dbv_accountsbase.moveToNext())
