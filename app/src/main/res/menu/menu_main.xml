@@ -25,6 +25,13 @@
         app:showAsAction="never"
         android:onClick="gotoEditincomeActivity"
         />
+    <item android:id="@+id/action_report"
+        android:title="Account Report"
+        android:orderInCategory="100"
+        app:showAsAction="never"
+        android:onClick="gotoReportMenu"
+        />
+
     <item android:id="@+id/action_settings" android:title="@string/action_settings"
         android:orderInCategory="100" app:showAsAction="never"
         android:onClick="openSettings"

@@ -14,6 +14,7 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.preference.PreferenceManager;
+import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
@@ -29,7 +30,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -37,6 +40,8 @@ public class MainActivity extends AppCompatActivity {
     static int dbv_baseAccount_id;
     static int baseAccount_pos;//--page position
     public static int closeboook_date;
+    public static int reportPickedMonth;
+    public static int reportPickedYear;
     static String dbv_baseAccount_name;
     final static int ROOM_ADDEXPENSE_ID = 0;
     final static int ROOM_ADDINCOME_ID = 1;
@@ -127,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
         mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-                PlaceholderFragment.refreshPage();
+                //PlaceholderFragment.refreshPage();
             }
 
             @Override
@@ -138,6 +143,9 @@ public class MainActivity extends AppCompatActivity {
             public void onPageScrollStateChanged(int state) {
             }
         });
+        final Calendar c = Calendar.getInstance();
+        reportPickedYear = c.get(Calendar.YEAR);
+        reportPickedMonth = c.get(Calendar.MONTH) +1;
     }
 
 
@@ -231,7 +239,7 @@ public class MainActivity extends AppCompatActivity {
     {
         refreshBaseAccount();
         Intent mi = new Intent(MainActivity.this, AccountActivity.class);
-        MainActivity.this.startActivityForResult(mi,ROOM_CHANGEBASEACCOUNT_ID);
+        MainActivity.this.startActivityForResult(mi, ROOM_CHANGEBASEACCOUNT_ID);
     }
     public void changeCloseBookDate(View view)
     {
@@ -251,10 +259,10 @@ public class MainActivity extends AppCompatActivity {
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int item) {
-                        int selecteddate = item+1;
+                        int selecteddate = item + 1;
                         MainActivity.closeboook_date = selecteddate;
                         Button bt_closebookchange = (Button) findViewById(R.id.bt_closebookchange);
-                        bt_closebookchange.setText(Integer.toString(selecteddate)+" to "+Integer.toString(selecteddate));
+                        bt_closebookchange.setText(Integer.toString(selecteddate) + " to " + Integer.toString(selecteddate));
                         dbmain.execSQL("UPDATE settings SET value=" + selecteddate + " WHERE name='close_date' ");
                         PlaceholderFragment.refreshPage();
 
@@ -288,12 +296,126 @@ public class MainActivity extends AppCompatActivity {
         MainActivity.this.startActivity(mi);
     }
 
+    public CharSequence[] reportDrawArray()
+    {
+        final Calendar c = Calendar.getInstance();
+        int thisYear = c.get(Calendar.YEAR);
+        int thisMonth = c.get(Calendar.MONTH)+1;
+        int thisDay = c.get(Calendar.DAY_OF_MONTH);
+
+        ArrayList<CharSequence> arResult = new ArrayList<CharSequence>();
+        Cursor dbc_mostearly = dbmain.rawQuery("SELECT date FROM incomesexpenses ORDER BY date ASC LIMIT 1",null);
+        //closeboook_date
+        String start, startDay,startMonth,startYear;
+        String select;
+        if (dbc_mostearly.moveToNext()) {
+            start = dbc_mostearly.getString(0);
+
+            startYear = start.substring(0,4);
+//            startMonth = start.substring(5,7);
+            startMonth = "01";//-- start counting from january
+            startDay = start.substring(8);
+            String month = startMonth;
+            String year = startYear;
+            while (true) {
+                String monthName = Ctrl.monthName[Integer.valueOf(month)-1];
+//                String monthName = month;
+                String cbdate = String.format("%02d", closeboook_date);
+                if (Integer.valueOf(startDay) < closeboook_date) {
+                    select = "WHERE date BETWEEN DATE('" + year + "-" + month + "-" + cbdate  + "', '-1 month') AND " +
+                            "DATE('" + startYear + "-" + month + "-" + cbdate  + "', '-1 month', '+1 month', '-1 day')";
+                } else {
+                    select = "WHERE date BETWEEN DATE('" + year + "-" + month + "-" + cbdate  + "') AND " +
+                            "DATE('" + startYear + "-" + month + "-" + cbdate  + "', '+1 month', '-1 day')";
+                }
+
+
+                int y = Integer.valueOf(year);
+                int m = Integer.valueOf(month)+1;
+                if (m>12) {
+                    m = 1;
+                    y += 1;
+                }
+                Cursor dbc_specific = dbmain.rawQuery("SELECT date FROM incomesexpenses "+select,null);
+                if (dbc_specific.getCount()>0) {
+                    String todate = ""+y+"-"+String.format("%02d",m)+"-"+cbdate;
+                    debugToast(todate);
+                    Cursor dbc_intodate = dbmain.rawQuery("SELECT date('"+todate+"', '-1 day')", null);
+                    dbc_intodate.moveToNext();
+                    String intodate = dbc_intodate.getString(0);
+                    String toMonthName = Ctrl.monthName[Integer.valueOf(intodate.substring(5, 7))-1];
+                    arResult.add(year+"-"+monthName+"-"+cbdate +" to\n" + y+"-"+toMonthName+"-"+intodate.substring(8,10));
+                    dbc_intodate.close();
+//                    arResult.add(year + "-" + monthName + "-" + cbdate + " to " + String.format("%02d", y) + "-" + String.format("%02d", m) + "-" + cbdate);
+                }
+                dbc_specific.close();
+
+                year = String.format("%02d",y);
+                month = String.format("%02d",m);
+                if (y>thisYear)
+                    break;
+                else if (y==thisYear && m>thisMonth)
+                    break;
+                else if (y==thisYear && m==thisMonth && closeboook_date>thisDay)
+                    break;
+            }
+        }
+        dbc_mostearly.close();
+
+
+        CharSequence[] result = new CharSequence[arResult.size()];
+        result = arResult.toArray(result);
+        return  result;
+    }
+
+    public void reportDraw()
+    {
+        final CharSequence[] dategroup = reportDrawArray();
+        AlertDialog.Builder selector = new AlertDialog.Builder(MainActivity.this);
+        selector.setTitle("Pick period ");
+        selector.setItems(
+                dategroup,
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int item) {
+                        String pickeddate = dategroup[item].toString();
+                        reportPickedYear = Integer.valueOf(pickeddate.substring(0, 4));
+//                        reportPickedMonth = Integer.valueOf(pickeddate.substring(5, 7));
+                        reportPickedMonth = Ctrl.getMonthNum(pickeddate);
+
+                        if (item==dategroup.length)
+                        {
+                            //-- this means it is current period
+                            PlaceholderFragment.showAction();
+                        }
+                        else
+                        {
+                            PlaceholderFragment.hideAction();
+                        }
+
+                        PlaceholderFragment.refreshPage();
+                    }
+                }
+        );
+        selector.show();
+    }
+
+    public void gotoReportMenu(MenuItem item)
+    {
+        reportDraw();
+    }
+    public void gotoReportButton(View view)
+    {
+        reportDraw();
+    }
+
+
 
     /**
      * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
      * one of the sections/tabs/pages.
      */
-    public class SectionsPagerAdapter extends FragmentPagerAdapter {
+    public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
 
         public SectionsPagerAdapter(FragmentManager fm) {
             super(fm);
@@ -341,6 +463,7 @@ public class MainActivity extends AppCompatActivity {
         private static final String ARG_BASEACCOUNT_ID = "base_account_id";
         private static final String ARG_BASEACCOUNT_NAME = "base_account_name";
         private static View rootView;
+        private static int privateBaseAccountId;
         /**
          * Returns a new instance of this fragment for the given section
          * number.
@@ -366,6 +489,7 @@ public class MainActivity extends AppCompatActivity {
 
             String baseAccountName = getArguments().getString(ARG_BASEACCOUNT_NAME);
             int baseAccountId = getArguments().getInt(ARG_BASEACCOUNT_ID);
+            privateBaseAccountId = baseAccountId;
             MainActivity.dbv_baseAccount_id = baseAccountId;
             MainActivity.dbv_baseAccount_name = baseAccountName;
 
@@ -384,15 +508,15 @@ public class MainActivity extends AppCompatActivity {
             NumberFormat nf = NumberFormat.getCurrencyInstance();
             Double in,transIn;
             Double ex,transEx;
-            in = getMonthSummary("INCOME",0);
-            ex = getMonthSummary("EXPENSE",0);
-            transIn = getMonthSummary("TRANSFERINCOME",0);
-            transEx = getMonthSummary("TRANSFEREXPENSE",0);
+            in = getMonthSummary("INCOME",0, "BETWEEN");
+            ex = getMonthSummary("EXPENSE",0, "BETWEEN");
+            transIn = getMonthSummary("TRANSFERINCOME",0, "BETWEEN");
+            transEx = getMonthSummary("TRANSFEREXPENSE",0, "BETWEEN");
 
-            Double lin = getMonthSummary("INCOME",-1);
-            Double lex = getMonthSummary("EXPENSE",-1);
-            Double ltin = getMonthSummary("TRANSFERINCOME",-1);
-            Double ltex = getMonthSummary("TRANSFEREXPENSE",-1);
+            Double lin = getMonthSummary("INCOME",0, "BEFORE");
+            Double lex = getMonthSummary("EXPENSE",0, "BEFORE");
+            Double ltin = getMonthSummary("TRANSFERINCOME",0, "BEFORE");
+            Double ltex = getMonthSummary("TRANSFEREXPENSE", 0, "BEFORE");
             Double lastbalance = lin +ltin - lex -ltex;
 
 
@@ -404,35 +528,45 @@ public class MainActivity extends AppCompatActivity {
 
             ((TextView) rootView.findViewById(R.id.tv_LastSumBalance)).setText(nf.format(lastbalance));
 
-            ((TextView) rootView.findViewById(R.id.tv_SumBalance)).setText(nf.format(lastbalance+in + transIn - ex - transEx));
+            ((TextView) rootView.findViewById(R.id.tv_SumBalance)).setText(nf.format(lastbalance + in + transIn - ex - transEx));
         }
         public static void refreshPage()
         {
             updateBalanceTM();
             ((Button) rootView.findViewById(R.id.bt_closebookchange)).setText(""+MainActivity.closeboook_date+" to "+MainActivity.closeboook_date);
         }
-        public static Double getMonthSummary(String type, int month)
+        public static Double getMonthSummary(String type, int month, String scope)
         //-- type: 'INCOME', 'EXPENSE',
         //-- month is month number 1=jan, 2=feb, 3=mar
         //--    or relative to current month 0=thismonth -1=last month, -2 before last month
+        //-- scope is "BETWEEN" or "BEFORE"
         {
             final Calendar c = Calendar.getInstance();
-            int mYear = c.get(Calendar.YEAR);
+            int mYear = reportPickedYear;
             int mMonth;
             if (month>0)
                 mMonth = month;
             else
-                mMonth = c.get(Calendar.MONTH) + 1 + month;
+                mMonth = reportPickedMonth + month;
             int mDay = c.get(Calendar.DAY_OF_MONTH);
+
+            if (mDay<closeboook_date) //-- if closebook_date is later than current date
+                mMonth -= 1;
+
             String thismonth = ""+mYear+"-"+String.format("%02d",mMonth)+"-"+String.format("%02d",closeboook_date);
 
+            String datefilter;
+            if (scope.equals("BEFORE"))
+                datefilter = "date < DATE('"+thismonth+"')";
+            else
+                datefilter = "date BETWEEN DATE('" + thismonth + "') AND DATE('" + thismonth + "','+1 month', '-1 day')";
             Cursor dbc;
-            if (type=="TRANSFERINCOME")
+            if (type.equals("TRANSFERINCOME"))
             {//--this one is a bit different, (searching TRANSFEREXPENSE)
-                dbc = dbmain.rawQuery("SELECT SUM(amount) FROM incomesexpenses WHERE from_account_id='" + MainActivity.dbv_baseAccount_id + "' AND type='TRANSFEREXPENSE' AND date BETWEEN DATE('" + thismonth + "') AND DATE('" + thismonth + "','+1 month', '-1 day'); ", null);
+                dbc = dbmain.rawQuery("SELECT SUM(amount) FROM incomesexpenses WHERE from_account_id='" + privateBaseAccountId + "' AND type='TRANSFEREXPENSE' AND "+datefilter, null);
             }
             else //--- for INCOME, EXPENSE, & TRANSFEREXPENSE
-                dbc = dbmain.rawQuery("SELECT SUM(amount) FROM incomesexpenses WHERE base_account_id='" + MainActivity.dbv_baseAccount_id + "' AND type='" + type + "' AND date BETWEEN DATE('" + thismonth + "') AND DATE('" + thismonth + "','+1 month', '-1 day'); ", null);
+                dbc = dbmain.rawQuery("SELECT SUM(amount) FROM incomesexpenses WHERE base_account_id='" + privateBaseAccountId + "' AND type='" + type + "' AND "+datefilter, null);
 
             if (dbc.moveToNext())
             {
@@ -445,6 +579,13 @@ public class MainActivity extends AppCompatActivity {
                 return 0.0;//*/
             }
         }
+
+        public static void hideAction() {
+            ((LinearLayout) rootView.findViewById(R.id.ll_ButtonWrapper)).setVisibility(View.INVISIBLE);
+        }
+        public static void showAction() {
+            ((LinearLayout) rootView.findViewById(R.id.ll_ButtonWrapper)).setVisibility(View.VISIBLE);
+        }
     }
 
     public void openSettings(MenuItem item)
@@ -454,4 +595,9 @@ public class MainActivity extends AppCompatActivity {
         MainActivity.this.startActivity(mi);
     }
 
+    public void debugToast(String text)
+    {
+        Toast toast = Toast.makeText(getApplicationContext(),text, Toast.LENGTH_SHORT);
+        toast.show();
+    }
 }
