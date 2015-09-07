@@ -37,8 +37,13 @@
     <string name="title_activity_editexpense">Expenses</string>
     <string name="description">Description</string>
     <string name="title_activity_editincome">EditincomeActivity</string>
-    <string name="banner_ad_unit_id">ca-app-pub-1378858279576731/7879318403</string>
+
+
+    <string name="banner_ad_unit_id_asli">ca-app-pub-1378858279576731/7879318403</string>
+    <string name="banner_ad_unit_id">ca-app-pub-3940256099942544/6300978111</string>
     <string name="banner_ad_unit_id_tes">ca-app-pub-3940256099942544/6300978111</string>
+    <string name="banner_ad_unit_id_full">ca-app-pub-1378858279576731/4042718002</string>
+
     <string name="title_activity_account">AccountActivity</string>
 
     <color name="bgAccountEditDark">#11000000</color>

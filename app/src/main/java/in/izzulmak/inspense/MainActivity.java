@@ -10,20 +10,15 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.preference.PreferenceManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.app.ActionBar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.os.Bundle;
 import android.support.v4.view.ViewPager;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -33,6 +28,10 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.InterstitialAd;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -47,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
     final static int ROOM_ADDINCOME_ID = 1;
     final static int ROOM_CHANGEBASEACCOUNT_ID = 2;
     public static SQLiteDatabase dbmain;
+    public static AdRequest adRequest;
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -95,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
             dbmain.execSQL("INSERT INTO accounts VALUES(7, 'Transportation',   'EXPENSE',  0, 1)");
 
             dbmain.execSQL("INSERT INTO settings VALUES('base_account', 1)");
+            dbmain.execSQL("INSERT INTO settings VALUES('base_account_page','0')");
         }
         dbc_Accounttable.close();
 
@@ -116,6 +117,10 @@ public class MainActivity extends AppCompatActivity {
         dbv_baseAccount_id = dbc_baseAccount.getInt(0);
         dbv_baseAccount_name = dbc_baseAccount.getString(2);
         dbc_baseAccount.close();
+        Cursor dbc_basePage = dbmain.rawQuery("SELECT value FROM settings WHERE name='base_account_page';",null);
+        if (dbc_basePage.moveToNext())
+            baseAccount_pos = dbc_basePage.getInt(0);
+        dbc_basePage.close();
 
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
@@ -132,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
         mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-                //PlaceholderFragment.refreshPage();
+                PlaceholderFragment.refreshPage();
             }
 
             @Override
@@ -146,6 +151,7 @@ public class MainActivity extends AppCompatActivity {
         final Calendar c = Calendar.getInstance();
         reportPickedYear = c.get(Calendar.YEAR);
         reportPickedMonth = c.get(Calendar.MONTH) +1;
+        adRequest = new AdRequest.Builder().addTestDevice("E05BA7C7DB8B7BFC90E0ECE539108CDA").build();
     }
 
 
@@ -203,6 +209,8 @@ public class MainActivity extends AppCompatActivity {
     {
         int position = mViewPager.getCurrentItem();
         baseAccount_pos = position;
+        dbmain.execSQL("INSERT OR REPLACE INTO settings(name,value) VALUES('base_account_page','" + position + "')");
+
         Cursor dbc_Base = dbmain.rawQuery("SELECT id,name FROM accounts WHERE enabled=1 AND type='BASE' ",null);
         if (position<dbc_Base.getCount())
         {
@@ -210,6 +218,7 @@ public class MainActivity extends AppCompatActivity {
             dbv_baseAccount_name = dbc_Base.getString(1);
             dbv_baseAccount_id = dbc_Base.getInt(0);
         }
+        dbc_Base.close();
     }
 
     public void gotoDebug(MenuItem item)
@@ -273,6 +282,11 @@ public class MainActivity extends AppCompatActivity {
                 }
         );
         selector.show();
+    }
+    public void resetRoom() {
+        Intent intent = getIntent();
+        finish();
+        startActivity(intent);
     }
 
     public void gotoEditexpenseActivity(MenuItem item)
@@ -367,7 +381,20 @@ public class MainActivity extends AppCompatActivity {
         result = arResult.toArray(result);
         return  result;
     }
-
+    public void closeReport(View view)
+    {
+        reportPickedYear = Calendar.getInstance().get(Calendar.YEAR);
+        reportPickedMonth = Calendar.getInstance().get(Calendar.MONTH)+1;
+        PlaceholderFragment.actionIsHidden = false;
+        PlaceholderFragment.showAction();
+        try{
+            ((Button) findViewById(R.id.bt_closeReport)).setVisibility(View.INVISIBLE);
+        }catch (Exception e){}
+        try{
+            ((LinearLayout) findViewById(R.id.ll_ButtonWrapper)).setVisibility(View.VISIBLE);
+        }catch (Exception e){}
+        PlaceholderFragment.refreshPage();
+    }
     public void reportDraw()
     {
         final CharSequence[] dategroup = reportDrawArray();
@@ -380,20 +407,38 @@ public class MainActivity extends AppCompatActivity {
                     public void onClick(DialogInterface dialog, int item) {
                         String pickeddate = dategroup[item].toString();
                         reportPickedYear = Integer.valueOf(pickeddate.substring(0, 4));
-//                        reportPickedMonth = Integer.valueOf(pickeddate.substring(5, 7));
                         reportPickedMonth = Ctrl.getMonthNum(pickeddate);
+                        try {
+                            ((TextView) findViewById(R.id.tv_Summary)).setText("Report for\n" + pickeddate.replaceAll("\\n", " "));
+                        }catch (Exception e){}
+                        PlaceholderFragment.summaryFor = "Report for\n"+pickeddate.replaceAll("\\n"," ");
 
-                        if (item==dategroup.length)
+                        if (item==(dategroup.length-1))
                         {
                             //-- this means it is current period
+                            PlaceholderFragment.actionIsHidden = false;
                             PlaceholderFragment.showAction();
+                            try{
+                                ((Button) findViewById(R.id.bt_closeReport)).setVisibility(View.INVISIBLE);
+                                }catch (Exception e){}
+                            try{
+                                ((LinearLayout) findViewById(R.id.ll_ButtonWrapper)).setVisibility(View.VISIBLE);
+                            }catch (Exception e){}
                         }
                         else
                         {
+                            PlaceholderFragment.actionIsHidden = true;
                             PlaceholderFragment.hideAction();
+                            try{
+                                ((Button) findViewById(R.id.bt_closeReport)).setVisibility(View.VISIBLE);
+                            }catch (Exception e){}
+                            try{
+                                ((LinearLayout) findViewById(R.id.ll_ButtonWrapper)).setVisibility(View.GONE);
+                            }catch (Exception e){}
                         }
 
                         PlaceholderFragment.refreshPage();
+//                        resetRoom();
                     }
                 }
         );
@@ -424,24 +469,32 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public Fragment getItem(int position) {
             Cursor dbc_bases = dbmain.rawQuery("SELECT id,name FROM accounts WHERE enabled=1 AND type='BASE' ", null);
-            dbc_bases.moveToPosition(position);
-            int baseid = dbc_bases.getInt(0);
-            String basename = dbc_bases.getString(1);
+            int basecount = dbc_bases.getCount();
+            int baseid;
+            String basename;
+            if (position<basecount) {
+                dbc_bases.moveToPosition(position);
+                baseid = dbc_bases.getInt(0);
+                basename = dbc_bases.getString(1);
+            }
+            else {
+                baseid=0;
+                basename="Offer";
+            }
             dbc_bases.close();
 
 
             // getItem is called to instantiate the fragment for the given page.
             // Return a PlaceholderFragment (defined as a static inner class below).
-            return PlaceholderFragment.newInstance(position + 1, baseid, basename);
+            return PlaceholderFragment.newInstance(position, basecount, baseid, basename);
         }
 
         @Override
         public int getCount() {
-            // Show 3 total pages.
             Cursor dbc_bases = dbmain.rawQuery("SELECT name FROM accounts WHERE enabled=1 AND type='BASE' ", null);
             int basenum = dbc_bases.getCount();
             dbc_bases.close();
-            return basenum;
+            return basenum+1;
         }
 
         @Override
@@ -460,18 +513,25 @@ public class MainActivity extends AppCompatActivity {
          * fragment.
          */
         private static final String ARG_SECTION_NUMBER = "section_number";
+        private static final String ARG_SECTION_TOTAL = "section_total";
         private static final String ARG_BASEACCOUNT_ID = "base_account_id";
         private static final String ARG_BASEACCOUNT_NAME = "base_account_name";
         private static View rootView;
+        private static View adsView;
         private static int privateBaseAccountId;
+        public static boolean actionIsHidden = false;
+        public static String summaryFor = "Summary";
+        InterstitialAd mInterstitialAd;
+        public static boolean isAdds;
         /**
          * Returns a new instance of this fragment for the given section
          * number.
          */
-        public static PlaceholderFragment newInstance(int sectionNumber, int baseAccountId, String baseAccountName) {
+        public static PlaceholderFragment newInstance(int sectionNumber, int sectionTotal, int baseAccountId, String baseAccountName) {
             PlaceholderFragment fragment = new PlaceholderFragment();
             Bundle args = new Bundle();
             args.putInt(ARG_SECTION_NUMBER, sectionNumber);
+            args.putInt(ARG_SECTION_TOTAL, sectionTotal);
             args.putInt(ARG_BASEACCOUNT_ID, baseAccountId);
             args.putString(ARG_BASEACCOUNT_NAME, baseAccountName);
             fragment.setArguments(args);
@@ -485,22 +545,75 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                  Bundle savedInstanceState) {
+            int secnum = getArguments().getInt(ARG_SECTION_NUMBER);
+            int sectot = getArguments().getInt(ARG_SECTION_TOTAL);
             rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-            String baseAccountName = getArguments().getString(ARG_BASEACCOUNT_NAME);
-            int baseAccountId = getArguments().getInt(ARG_BASEACCOUNT_ID);
-            privateBaseAccountId = baseAccountId;
-            MainActivity.dbv_baseAccount_id = baseAccountId;
-            MainActivity.dbv_baseAccount_name = baseAccountName;
+            if (secnum<sectot) {
+                isAdds = false;
+                String baseAccountName = getArguments().getString(ARG_BASEACCOUNT_NAME);
+                int baseAccountId = getArguments().getInt(ARG_BASEACCOUNT_ID);
+                privateBaseAccountId = baseAccountId;
+                MainActivity.dbv_baseAccount_id = baseAccountId;
+                MainActivity.dbv_baseAccount_name = baseAccountName;
 
-            TextView tv_Accountname = (TextView) rootView.findViewById(R.id.tv_Accountname);
-            tv_Accountname.setText("Base account: " + dbv_baseAccount_name);
+                TextView tv_Accountname = (TextView) rootView.findViewById(R.id.tv_Accountname);
+                tv_Accountname.setText("Base account: " + dbv_baseAccount_name);
 
-            Button bt_closebookchange = (Button) rootView.findViewById(R.id.bt_closebookchange);
-            bt_closebookchange.setText(Integer.toString(closeboook_date) + " to " + Integer.toString(closeboook_date));
-            updateBalanceTM();
+                Button bt_closebookchange = (Button) rootView.findViewById(R.id.bt_closebookchange);
+                bt_closebookchange.setText(Integer.toString(closeboook_date) + " to " + Integer.toString(closeboook_date));
+                updateBalanceTM();
+                if (actionIsHidden) {
+                    ((LinearLayout) rootView.findViewById(R.id.ll_ButtonWrapper)).setVisibility(View.GONE);
+                    ((TextView) rootView.findViewById(R.id.tv_Summary)).setText(summaryFor);
+                    ((Button) rootView.findViewById(R.id.bt_closeReport)).setVisibility(View.VISIBLE);
+                } else {
+                    ((LinearLayout) rootView.findViewById(R.id.ll_ButtonWrapper)).setVisibility(View.VISIBLE);
+                    ((TextView) rootView.findViewById(R.id.tv_Summary)).setText("Summary");
+                    ((Button) rootView.findViewById(R.id.bt_closeReport)).setVisibility(View.INVISIBLE);
+                }
+                showReport();
+                return rootView;
+            }
+            else {
+                adsView = inflater.inflate(R.layout.fragment_ads, container, false);
+                AdView mAdView = (AdView) adsView.findViewById(R.id.adViewFull);
+                mAdView.loadAd(MainActivity.adRequest);
+//                mInterstitialAd = new InterstitialAd(adsView.getContext());
+//                mInterstitialAd.setAdUnitId(getResources().getString(R.string.banner_ad_unit_id_full));
+//                requestNewInterstitial();
+                isAdds = true;
+                return adsView;
+            }
+        }
+        private void requestNewInterstitial() {
+            AdRequest adRequest = new AdRequest.Builder()
+                    .addTestDevice("E05BA7C7DB8B7BFC90E0ECE539108CDA")
+                    .build();
 
-            return rootView;
+            mInterstitialAd.loadAd(adRequest);
+        }
+
+        public static void showReport()
+        {
+            if (isAdds)
+                return;
+            LinearLayout ll_report = (LinearLayout) rootView.findViewById(R.id.ll_report);
+            ll_report.removeAllViews();
+            Cursor dbc_rpAccountUsed = dbmain.rawQuery("SELECT " +
+                    "incomesexpenses.from_account_id, accounts.name FROM incomesexpenses LEFT JOIN accounts " +
+                    "WHERE incomesexpenses.from_account_id=accounts.id " +
+                    "GROUP BY incomesexpenses.from_account_id ", null);
+            while (dbc_rpAccountUsed.moveToNext())
+            {
+                Double sumPerAccountUsed = getMonthSummary("EXPENSE", 0, "BETWEEN", dbc_rpAccountUsed.getInt(0));
+                if (sumPerAccountUsed>0) {
+                    TextView rp = new TextView(ll_report.getContext());
+                    rp.setText(dbc_rpAccountUsed.getString(1) + " " + NumberFormat.getCurrencyInstance().format(sumPerAccountUsed));
+                    ll_report.addView(rp);
+                }
+            }
+            dbc_rpAccountUsed.close();
         }
 
         public static void updateBalanceTM()
@@ -508,15 +621,15 @@ public class MainActivity extends AppCompatActivity {
             NumberFormat nf = NumberFormat.getCurrencyInstance();
             Double in,transIn;
             Double ex,transEx;
-            in = getMonthSummary("INCOME",0, "BETWEEN");
-            ex = getMonthSummary("EXPENSE",0, "BETWEEN");
-            transIn = getMonthSummary("TRANSFERINCOME",0, "BETWEEN");
-            transEx = getMonthSummary("TRANSFEREXPENSE",0, "BETWEEN");
+            in = getMonthSummary("INCOME",0, "BETWEEN", -1);
+            ex = getMonthSummary("EXPENSE",0, "BETWEEN", -1);
+            transIn = getMonthSummary("TRANSFERINCOME",0, "BETWEEN", -1);
+            transEx = getMonthSummary("TRANSFEREXPENSE",0, "BETWEEN", -1);
 
-            Double lin = getMonthSummary("INCOME",0, "BEFORE");
-            Double lex = getMonthSummary("EXPENSE",0, "BEFORE");
-            Double ltin = getMonthSummary("TRANSFERINCOME",0, "BEFORE");
-            Double ltex = getMonthSummary("TRANSFEREXPENSE", 0, "BEFORE");
+            Double lin = getMonthSummary("INCOME",0, "BEFORE", -1);
+            Double lex = getMonthSummary("EXPENSE",0, "BEFORE", -1);
+            Double ltin = getMonthSummary("TRANSFERINCOME",0, "BEFORE", -1);
+            Double ltex = getMonthSummary("TRANSFEREXPENSE", 0, "BEFORE", -1);
             Double lastbalance = lin +ltin - lex -ltex;
 
 
@@ -533,14 +646,24 @@ public class MainActivity extends AppCompatActivity {
         public static void refreshPage()
         {
             updateBalanceTM();
+            showReport();
             ((Button) rootView.findViewById(R.id.bt_closebookchange)).setText(""+MainActivity.closeboook_date+" to "+MainActivity.closeboook_date);
         }
-        public static Double getMonthSummary(String type, int month, String scope)
+        public static Double getMonthSummary(String type, int month, String scope, int specificAccountId)
         //-- type: 'INCOME', 'EXPENSE',
         //-- month is month number 1=jan, 2=feb, 3=mar
         //--    or relative to current month 0=thismonth -1=last month, -2 before last month
         //-- scope is "BETWEEN" or "BEFORE"
+        //-- specific account is passed non (-1) if want to get only specific account INCOME/EXPENSE like 3 for "Main Income"
+        //--    only work for EXPENSE & INCOME type, doesn't work for TRANSFERINCOME/TRANSFEREXPENSE
         {
+            String accountFilter;
+            if (specificAccountId!=-1 && (type.equals("INCOME") || type.equals("EXPENSE")))
+                accountFilter = " AND from_account_id="+specificAccountId+" ";
+            else
+                accountFilter = "";
+
+
             final Calendar c = Calendar.getInstance();
             int mYear = reportPickedYear;
             int mMonth;
@@ -566,7 +689,17 @@ public class MainActivity extends AppCompatActivity {
                 dbc = dbmain.rawQuery("SELECT SUM(amount) FROM incomesexpenses WHERE from_account_id='" + privateBaseAccountId + "' AND type='TRANSFEREXPENSE' AND "+datefilter, null);
             }
             else //--- for INCOME, EXPENSE, & TRANSFEREXPENSE
-                dbc = dbmain.rawQuery("SELECT SUM(amount) FROM incomesexpenses WHERE base_account_id='" + privateBaseAccountId + "' AND type='" + type + "' AND "+datefilter, null);
+//                dbc = dbmain.rawQuery("SELECT SUM(amount) FROM incomesexpenses WHERE base_account_id='" + privateBaseAccountId + "' AND type='" + type + "' AND "+datefilter, null);
+                dbc = dbmain.rawQuery("SELECT SUM(amount) " +
+                        "FROM incomesexpenses " +
+                        "WHERE base_account_id= ? " +
+                        "AND type= ? " +
+                        "AND " +datefilter+" "+ accountFilter,
+                            new String[] {
+                                    Integer.toString(privateBaseAccountId),
+                                    type
+                            }
+                );
 
             if (dbc.moveToNext())
             {
@@ -581,10 +714,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         public static void hideAction() {
-            ((LinearLayout) rootView.findViewById(R.id.ll_ButtonWrapper)).setVisibility(View.INVISIBLE);
+            ((LinearLayout) rootView.findViewById(R.id.ll_ButtonWrapper)).setVisibility(View.GONE);
+            ((Button) rootView.findViewById(R.id.bt_closeReport)).setVisibility(View.VISIBLE);
         }
         public static void showAction() {
             ((LinearLayout) rootView.findViewById(R.id.ll_ButtonWrapper)).setVisibility(View.VISIBLE);
+            ((Button) rootView.findViewById(R.id.bt_closeReport)).setVisibility(View.INVISIBLE);
         }
     }
 

@@ -1,12 +1,16 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
     xmlns:ads="http://schemas.android.com/apk/res-auto"
     android:layout_height="match_parent" android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     android:paddingBottom="@dimen/activity_vertical_margin"
-    tools:context=".MainActivity$PlaceholderFragment">
-
+    tools:context=".MainActivity$PlaceholderFragment"
+    android:id="@+id/rl">
+<LinearLayout
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
     <TextView
         android:text="@string/account"
         android:layout_width="wrap_content"
@@ -14,8 +18,22 @@
         android:id="@+id/tv_Accountname" />
     <LinearLayout
         android:layout_width="fill_parent"
+        android:layout_height="42dp"
+        android:gravity="right">
+        <Button
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:layout_gravity="end"
+            android:text="x"
+            android:id="@+id/bt_closeReport"
+            android:visibility="invisible"
+            android:onClick="closeReport"
+            />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="0dp"
         android:orientation="vertical"
         android:layout_gravity="bottom"
         android:layout_alignParentBottom="true"
@@ -27,8 +45,12 @@
             android:orientation="vertical"
             android:gravity="center_horizontal">
             <TextView
-                android:layout_width="wrap_content"
+                android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
+                android:id="@+id/tv_Summary"
+                android:textAlignment="center"
+                android:gravity="center"
+                android:layout_gravity="center"
                 android:text="@string/summary" />
             <LinearLayout
                 android:layout_width="fill_parent"
@@ -304,6 +326,19 @@
                     android:onClick="gotoEditaccount"/>
             </LinearLayout>
         </LinearLayout>
-    </LinearLayout>
 
-</RelativeLayout>
+
+        <!-- the report -->
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/ll_report"
+            android:visibility="visible"
+            android:orientation="vertical"
+            android:layout_marginTop="30dp"
+            >
+
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
+</ScrollView>
