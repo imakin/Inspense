@@ -8,6 +8,7 @@ import java.util.Locale;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
@@ -47,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
     final static int ROOM_CHANGEBASEACCOUNT_ID = 2;
     public static SQLiteDatabase dbmain;
     public static AdRequest adRequest;
+    static int firstRefresh = 0;
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -96,8 +98,24 @@ public class MainActivity extends AppCompatActivity {
 
             dbmain.execSQL("INSERT INTO settings VALUES('base_account', 1)");
             dbmain.execSQL("INSERT INTO settings VALUES('base_account_page','0')");
+            dbmain.execSQL("INSERT INTO settings VALUES('close_date','1')");
         }
+//        dbmain.execSQL("CREATE TABLE IF NOT EXISTS settings(name VARCHAR, value VARCHAR)");
+//        dbmain.execSQL("INSERT INTO settings VALUES('base_account', 1)");
+//        dbmain.execSQL("INSERT INTO settings VALUES('base_account_page','0')");
+//        dbmain.execSQL("INSERT INTO settings VALUES('close_date','1')");
         dbc_Accounttable.close();
+
+        Cursor dbc_IndexCreated = dbmain.rawQuery("SELECT name FROM settings WHERE name=?;", new String[]{"index_created"});
+        if (!dbc_IndexCreated.moveToNext()) {
+            dbmain.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS name ON settings (name)");
+//            ContentValues thisInstantioationsSucks = new ContentValues();
+//            thisInstantioationsSucks.put("name","index_created");
+//            thisInstantioationsSucks.put("values","1");
+//            dbmain.insert("settings", null, thisInstantioationsSucks);
+//            dbmain.execSQL("INSERT INTO settings VALUES('index_created',1)");
+        }
+        dbc_IndexCreated.close();
 
         //-- close book date, where sum is restarted
         Cursor dbc_closedate = dbmain.rawQuery("SELECT value FROM settings WHERE name='close_date';",null);
@@ -129,19 +147,19 @@ public class MainActivity extends AppCompatActivity {
         mViewPager = (ViewPager) findViewById(R.id.pager);
         mViewPager.setAdapter(mSectionsPagerAdapter);
         //refreshBaseAccount();
-        if (baseAccount_pos!=0)
-        {
-            mViewPager.setCurrentItem(baseAccount_pos);
-            PlaceholderFragment.updateBalanceTM();
-        }
+        firstRefresh = 0;
         mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-                PlaceholderFragment.refreshPage();
             }
 
             @Override
             public void onPageSelected(int position) {
+                if (firstRefresh!=0)
+                    PlaceholderFragment.refreshPage();
+                saveCurrentPage(position);
+                baseAccount_pos = position;
+                debugToast("saved to "+position);
             }
 
             @Override
@@ -152,6 +170,14 @@ public class MainActivity extends AppCompatActivity {
         reportPickedYear = c.get(Calendar.YEAR);
         reportPickedMonth = c.get(Calendar.MONTH) +1;
         adRequest = new AdRequest.Builder().addTestDevice("E05BA7C7DB8B7BFC90E0ECE539108CDA").build();
+
+
+        if (baseAccount_pos!=0)
+        {
+//            debugToast("got page pos "+baseAccount_pos);
+            mViewPager.setCurrentItem(baseAccount_pos);
+            firstRefresh= 1;
+        }
     }
 
 
@@ -180,6 +206,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data)
     {
+        debugToast("Triggered result");
         super.onActivityResult(requestCode, resultCode, data);
         mViewPager.setCurrentItem(baseAccount_pos);
         PlaceholderFragment.updateBalanceTM();
@@ -203,18 +230,39 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         //updateBalanceTM();
+        resetRoom();
+    }
+
+    public void saveCurrentPage()
+    {
+        int position = mViewPager.getCurrentItem();
+        baseAccount_pos = position;
+//        dbmain.execSQL("INSERT OR REPLACE INTO settings(name,value) VALUES('base_account_page','" + position + "')");
+//        dbmain.execSQL("INSERT OR REPLACE INTO settings(name,value) " +
+//                "VALUES((SELECT name FROM settings WHERE name='base_account_page'),'" + position + "')");
+        saveCurrentPage(position);
+    }
+    public void saveCurrentPage(int position)
+    {
+        baseAccount_pos = position;
+        dbmain.execSQL("INSERT OR REPLACE INTO settings(name,value) " +
+                "VALUES((SELECT name FROM settings WHERE name='base_account_page'),'" + position + "')");
+//        ContentValues thisInstantiationSucks = new ContentValues();
+//        thisInstantiationSucks.put("name", "base_account_page");
+//        thisInstantiationSucks.put("values", position);
+//        dbmain.replace("settings", null, thisInstantiationSucks);
     }
 
     public void refreshBaseAccount()
     {
-        int position = mViewPager.getCurrentItem();
-        baseAccount_pos = position;
-        dbmain.execSQL("INSERT OR REPLACE INTO settings(name,value) VALUES('base_account_page','" + position + "')");
-
+//        int position = mViewPager.getCurrentItem();
+//        baseAccount_pos = position;
+//        dbmain.execSQL("INSERT OR REPLACE INTO settings(name,value) VALUES('base_account_page','" + position + "')");
+//
         Cursor dbc_Base = dbmain.rawQuery("SELECT id,name FROM accounts WHERE enabled=1 AND type='BASE' ",null);
-        if (position<dbc_Base.getCount())
+        if (baseAccount_pos<dbc_Base.getCount())
         {
-            dbc_Base.moveToPosition(position);
+            dbc_Base.moveToPosition(baseAccount_pos);
             dbv_baseAccount_name = dbc_Base.getString(1);
             dbv_baseAccount_id = dbc_Base.getInt(0);
         }
@@ -223,7 +271,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void gotoDebug(MenuItem item)
     {
-        baseAccount_pos = mViewPager.getCurrentItem();
+//        baseAccount_pos = mViewPager.getCurrentItem();
         Intent mi = new Intent(MainActivity.this, DebugActivity.class);
         MainActivity.this.startActivity(mi);
     }
@@ -438,7 +486,8 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                         PlaceholderFragment.refreshPage();
-//                        resetRoom();
+                        refreshBaseAccount();
+                        resetRoom();
                     }
                 }
         );
@@ -558,7 +607,7 @@ public class MainActivity extends AppCompatActivity {
                 MainActivity.dbv_baseAccount_name = baseAccountName;
 
                 TextView tv_Accountname = (TextView) rootView.findViewById(R.id.tv_Accountname);
-                tv_Accountname.setText("Base account: " + dbv_baseAccount_name);
+                tv_Accountname.setText("("+secnum+"/"+sectot+") Base account: " + dbv_baseAccount_name);
 
                 Button bt_closebookchange = (Button) rootView.findViewById(R.id.bt_closebookchange);
                 bt_closebookchange.setText(Integer.toString(closeboook_date) + " to " + Integer.toString(closeboook_date));
@@ -647,7 +696,7 @@ public class MainActivity extends AppCompatActivity {
         {
             updateBalanceTM();
             showReport();
-            ((Button) rootView.findViewById(R.id.bt_closebookchange)).setText(""+MainActivity.closeboook_date+" to "+MainActivity.closeboook_date);
+            ((Button) rootView.findViewById(R.id.bt_closebookchange)).setText("" + MainActivity.closeboook_date + " to " + MainActivity.closeboook_date);
         }
         public static Double getMonthSummary(String type, int month, String scope, int specificAccountId)
         //-- type: 'INCOME', 'EXPENSE',
