@@ -13,6 +13,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.provider.Settings;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v4.app.Fragment;
@@ -30,6 +31,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.firebase.client.Firebase;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.InterstitialAd;
@@ -66,10 +68,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-
+        Firebase.setAndroidContext(this);
 
         dbmain = openOrCreateDatabase(getResources().getString(R.string.databasename),MODE_PRIVATE,null);
+
 
         /* reset
         dbmain.execSQL("DROP TABLE IF EXISTS accounts;");
@@ -108,12 +110,32 @@ public class MainActivity extends AppCompatActivity {
 
         Cursor dbc_IndexCreated = dbmain.rawQuery("SELECT name FROM settings WHERE name=?;", new String[]{"index_created"});
         if (!dbc_IndexCreated.moveToNext()) {
+            //-- delete duplicates
+            Cursor dbc_duplicates = dbmain.rawQuery("SELECT name,value FROM settings GROUP BY name",null);
+            while (dbc_duplicates.moveToNext())
+            {
+                String settingname = dbc_duplicates.getString(0);
+                String settingvalue = dbc_duplicates.getString(1);//-- grab the first value
+                Cursor dbc_dup = dbmain.rawQuery("SELECT name,value FROM settings WHERE name=? ",new String[] {settingname});
+                if (dbc_dup.getCount()>1)
+                {
+                    dbc_dup.moveToNext();
+                    String lastValueN =  dbc_dup.getString(0);
+                    String lastValueV =  dbc_dup.getString(1);
+
+                    dbmain.execSQL("DELETE FROM settings WHERE name='"+lastValueN+"'");
+                    dbmain.execSQL("INSERT OR REPLACE INTO settings VALUES('"+lastValueN+"', '"+lastValueV+"') ");
+                    debugToast("Duplicate found, fixing for settings."+settingname);
+                }
+                dbc_dup.close();
+            }
+            dbc_duplicates.close();
             dbmain.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS name ON settings (name)");
 //            ContentValues thisInstantioationsSucks = new ContentValues();
 //            thisInstantioationsSucks.put("name","index_created");
 //            thisInstantioationsSucks.put("values","1");
 //            dbmain.insert("settings", null, thisInstantioationsSucks);
-//            dbmain.execSQL("INSERT INTO settings VALUES('index_created',1)");
+            dbmain.execSQL("INSERT OR REPLACE INTO settings VALUES('index_created',1)");
         }
         dbc_IndexCreated.close();
 
@@ -128,6 +150,7 @@ public class MainActivity extends AppCompatActivity {
             dbmain.execSQL("INSERT INTO settings VALUES('close_date', 1)");
             closeboook_date = 1;
         }
+        dbc_closedate.close();
 
         //--active baseaccount, deprecated. we use baseAccount_pos now
         Cursor dbc_baseAccount = dbmain.rawQuery("SELECT settings.value,settings.name,accounts.name FROM settings,accounts WHERE settings.name='base_account' AND accounts.id=settings.value",null);
@@ -159,7 +182,6 @@ public class MainActivity extends AppCompatActivity {
                     PlaceholderFragment.refreshPage();
                 saveCurrentPage(position);
                 baseAccount_pos = position;
-                debugToast("saved to "+position);
             }
 
             @Override
@@ -174,7 +196,6 @@ public class MainActivity extends AppCompatActivity {
 
         if (baseAccount_pos!=0)
         {
-//            debugToast("got page pos "+baseAccount_pos);
             mViewPager.setCurrentItem(baseAccount_pos);
             firstRefresh= 1;
         }
@@ -206,7 +227,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data)
     {
-        debugToast("Triggered result");
+//        debugToast("Triggered result");
         super.onActivityResult(requestCode, resultCode, data);
         mViewPager.setCurrentItem(baseAccount_pos);
         PlaceholderFragment.updateBalanceTM();
@@ -269,6 +290,33 @@ public class MainActivity extends AppCompatActivity {
         dbc_Base.close();
     }
 
+    public void saveInspense(MenuItem item)
+    {
+        /* firebase do backup */
+        Firebase fb_ref = new Firebase("https://inspense.firebaseio.com/");
+        String thisphid = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        Firebase fb_thisref = fb_ref.child(thisphid);
+        Cursor dbc_datamaster = dbmain.rawQuery("SELECT name FROM sqlite_master WHERE type='table'",null);
+        while (dbc_datamaster.moveToNext())
+        {
+            String dbv_table = dbc_datamaster.getString(0);
+            Cursor dbc_datatable = dbmain.rawQuery("SELECT * FROM " + dbv_table + "", null);
+            int dbrow = 0;
+            while(dbc_datatable.moveToNext()) {
+                for (int i = 0; i < dbc_datatable.getColumnCount(); i++) {
+                    fb_thisref.
+                            child(dbv_table).
+                            child(Integer.toString(dbrow)).
+                            child("col"+i).
+                            setValue(dbc_datatable.getString(i));
+                }
+                dbrow += 1;
+            }
+            dbc_datatable.close();
+        }
+        dbc_datamaster.close();
+        debugToast("Data Saved (using your internet)");
+    }
     public void gotoDebug(MenuItem item)
     {
 //        baseAccount_pos = mViewPager.getCurrentItem();
@@ -607,7 +655,7 @@ public class MainActivity extends AppCompatActivity {
                 MainActivity.dbv_baseAccount_name = baseAccountName;
 
                 TextView tv_Accountname = (TextView) rootView.findViewById(R.id.tv_Accountname);
-                tv_Accountname.setText("("+secnum+"/"+sectot+") Base account: " + dbv_baseAccount_name);
+                tv_Accountname.setText("("+(secnum+1)+"/"+sectot+") Base account: " + dbv_baseAccount_name);
 
                 Button bt_closebookchange = (Button) rootView.findViewById(R.id.bt_closebookchange);
                 bt_closebookchange.setText(Integer.toString(closeboook_date) + " to " + Integer.toString(closeboook_date));
@@ -663,6 +711,63 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             dbc_rpAccountUsed.close();
+
+            TextView at;
+
+
+            LinearLayout ll_report_alltime = (LinearLayout) rootView.findViewById(R.id.ll_report_alltime);
+            ll_report_alltime.removeAllViews();
+            //-- all account sum
+            at = new TextView(ll_report.getContext());
+            Double aasum = 0.0;
+            Cursor dbc_base = dbmain.rawQuery("SELECT id FROM accounts WHERE type='BASE' and enabled=1", null);
+            while (dbc_base.moveToNext())
+            {
+                aasum = aasum + getMonthSummary("EXPENSE", -1, "BEETWEEN", dbc_base.getInt(0));
+            }
+            at.setText("All base account this period expense :"+NumberFormat.getCurrencyInstance().format(aasum) + "\n\n");
+            ll_report_alltime.addView(at);
+            dbc_base.close();
+
+            //-- the all time sum
+            Double atex = getMonthSummary("EXPENSE", 0,"ALL",-1);
+            Double atin = getMonthSummary("INCOME",0,"ALL",-1);
+
+
+            at = new TextView(ll_report_alltime.getContext());
+            at.setText("This base account all time expense: "+NumberFormat.getCurrencyInstance().format(atex));
+            ll_report_alltime.addView(at);
+
+            at = new TextView(ll_report_alltime.getContext());
+            at.setText("This base account all time income: "+NumberFormat.getCurrencyInstance().format(atin));
+            ll_report_alltime.addView(at);
+
+            at = new TextView(ll_report_alltime.getContext());
+            at.setText(" ");
+            ll_report_alltime.addView(at);
+
+            //-- all time all account
+            Cursor dbc_atsum = dbmain.rawQuery("SELECT sum(amount) FROM incomesexpenses WHERE type=?",new String[]{"EXPENSE"});
+            if (dbc_atsum.moveToNext())
+            {
+                at = new TextView(ll_report_alltime.getContext());
+                at.setText("all account all time expense: "+NumberFormat.getCurrencyInstance().format(dbc_atsum.getDouble(0)));
+                ll_report_alltime.addView(at);
+            }
+            dbc_atsum.close();
+
+            dbc_atsum = dbmain.rawQuery("SELECT sum(amount) FROM incomesexpenses WHERE type=?",new String[]{"INCOME"});
+            if (dbc_atsum.moveToNext())
+            {
+                at = new TextView(ll_report_alltime.getContext());
+                at.setText("all account all time income: "+NumberFormat.getCurrencyInstance().format(dbc_atsum.getDouble(0)));
+                ll_report_alltime.addView(at);
+            }
+            dbc_atsum.close();
+
+
+
+
         }
 
         public static void updateBalanceTM()
@@ -702,8 +807,10 @@ public class MainActivity extends AppCompatActivity {
         //-- type: 'INCOME', 'EXPENSE',
         //-- month is month number 1=jan, 2=feb, 3=mar
         //--    or relative to current month 0=thismonth -1=last month, -2 before last month
-        //-- scope is "BETWEEN" or "BEFORE"
-        //-- specific account is passed non (-1) if want to get only specific account INCOME/EXPENSE like 3 for "Main Income"
+        //-- scope is "BETWEEN" or "BEFORE" or "ALL",
+        // --     between is this month only, before is before this month, all is for no date filter
+        //-- specific account is passed non (-1) if want to get only specific account INCOME/EXPENSE
+        // -- like passing (3) will set specific for "Main Income"
         //--    only work for EXPENSE & INCOME type, doesn't work for TRANSFERINCOME/TRANSFEREXPENSE
         {
             String accountFilter;
@@ -729,13 +836,15 @@ public class MainActivity extends AppCompatActivity {
 
             String datefilter;
             if (scope.equals("BEFORE"))
-                datefilter = "date < DATE('"+thismonth+"')";
+                datefilter = " AND date < DATE('"+thismonth+"')";
+            else if (scope.equals("ALL"))
+                datefilter = "";
             else
-                datefilter = "date BETWEEN DATE('" + thismonth + "') AND DATE('" + thismonth + "','+1 month', '-1 day')";
+                datefilter = " AND date BETWEEN DATE('" + thismonth + "') AND DATE('" + thismonth + "','+1 month', '-1 day')";
             Cursor dbc;
             if (type.equals("TRANSFERINCOME"))
             {//--this one is a bit different, (searching TRANSFEREXPENSE)
-                dbc = dbmain.rawQuery("SELECT SUM(amount) FROM incomesexpenses WHERE from_account_id='" + privateBaseAccountId + "' AND type='TRANSFEREXPENSE' AND "+datefilter, null);
+                dbc = dbmain.rawQuery("SELECT SUM(amount) FROM incomesexpenses WHERE from_account_id='" + privateBaseAccountId + "' AND type='TRANSFEREXPENSE' "+datefilter, null);
             }
             else //--- for INCOME, EXPENSE, & TRANSFEREXPENSE
 //                dbc = dbmain.rawQuery("SELECT SUM(amount) FROM incomesexpenses WHERE base_account_id='" + privateBaseAccountId + "' AND type='" + type + "' AND "+datefilter, null);
@@ -743,7 +852,7 @@ public class MainActivity extends AppCompatActivity {
                         "FROM incomesexpenses " +
                         "WHERE base_account_id= ? " +
                         "AND type= ? " +
-                        "AND " +datefilter+" "+ accountFilter,
+                        datefilter+" "+ accountFilter,
                             new String[] {
                                     Integer.toString(privateBaseAccountId),
                                     type

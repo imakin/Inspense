@@ -330,14 +330,38 @@
 
         <!-- the report -->
         <LinearLayout
+            android:background="#ff000000"
+            android:layout_marginTop="20dp"
+            android:layout_width="fill_parent"
+            android:layout_height="1dp">
+
+        </LinearLayout><!-- always be a border -->
+        <LinearLayout
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:id="@+id/ll_report"
             android:visibility="visible"
             android:orientation="vertical"
-            android:layout_marginTop="30dp"
+            android:layout_marginTop="10dp"
             >
 
+        </LinearLayout>
+
+        <!-- all time sum -->
+        <LinearLayout
+            android:background="#ff000000"
+            android:layout_marginTop="20dp"
+            android:layout_width="fill_parent"
+            android:layout_height="1dp"> <!-- always be a border -->
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/ll_report_alltime"
+            android:visibility="visible"
+            android:orientation="vertical"
+            android:layout_marginTop="10dp"
+            >
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>

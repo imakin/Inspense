@@ -48,7 +48,7 @@ public class AddexpenseActivity extends ActionBarActivity {
         setContentView(R.layout.activity_addexpense);
 
         AdView mAdView = (AdView) findViewById(R.id.adView);
-        AdRequest adRequest = new AdRequest.Builder().build();
+        AdRequest adRequest = new AdRequest.Builder().addTestDevice("E05BA7C7DB8B7BFC90E0ECE539108CDA").build();
         mAdView.loadAd(adRequest);
 
         SQLiteDatabase db = openOrCreateDatabase(getResources().getString(R.string.databasename), MODE_PRIVATE, null);

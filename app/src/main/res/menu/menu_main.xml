@@ -36,4 +36,10 @@
         android:orderInCategory="100" app:showAsAction="never"
         android:onClick="openSettings"
         />
+    <item android:id="@+id/action_save"
+        android:title="Save Data to Migrate Inspense"
+        android:orderInCategory="100"
+        app:showAsAction="never"
+        android:onClick="saveInspense"
+        />
 </menu>
