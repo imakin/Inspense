@@ -693,6 +693,7 @@ public class MainActivity extends AppCompatActivity {
 
         public static void showReport()
         {
+            int backupBaseAccountId;
             if (isAdds)
                 return;
             LinearLayout ll_report = (LinearLayout) rootView.findViewById(R.id.ll_report);
@@ -720,18 +721,21 @@ public class MainActivity extends AppCompatActivity {
             //-- all account sum
             at = new TextView(ll_report.getContext());
             Double aasum = 0.0;
+            backupBaseAccountId = privateBaseAccountId;
             Cursor dbc_base = dbmain.rawQuery("SELECT id FROM accounts WHERE type='BASE' and enabled=1", null);
             while (dbc_base.moveToNext())
             {
-                aasum = aasum + getMonthSummary("EXPENSE", -1, "BEETWEEN", dbc_base.getInt(0));
+                privateBaseAccountId = dbc_base.getInt(0);
+                aasum = aasum + getMonthSummary("EXPENSE", 0, "BETWEEN", -1);
             }
             at.setText("All base account this period expense :"+NumberFormat.getCurrencyInstance().format(aasum) + "\n\n");
             ll_report_alltime.addView(at);
             dbc_base.close();
+            privateBaseAccountId = backupBaseAccountId;
 
             //-- the all time sum
-            Double atex = getMonthSummary("EXPENSE", 0,"ALL",-1);
-            Double atin = getMonthSummary("INCOME",0,"ALL",-1);
+            Double atex = getMonthSummary("EXPENSE", 0, "ALL", -1);
+            Double atin = getMonthSummary("INCOME", 0, "ALL", -1);
 
 
             at = new TextView(ll_report_alltime.getContext());
@@ -803,15 +807,19 @@ public class MainActivity extends AppCompatActivity {
             showReport();
             ((Button) rootView.findViewById(R.id.bt_closebookchange)).setText("" + MainActivity.closeboook_date + " to " + MainActivity.closeboook_date);
         }
+        /*
+        * calculates per month(period) summary
+        * @param type: 'INCOME', 'EXPENSE',
+        * @param month is month number 1=jan, 2=feb, 3=mar
+        *       or relative to current month 0=thismonth -1=last month, -2 before last month
+        * @param scope is "BETWEEN" or "BEFORE" or "ALL",
+        *       between is this month only, before is before this month, all is for no date filter
+        * @param specificAccountId specific account is passed non (-1) if want to get only specific account INCOME/EXPENSE
+        *       like passing (3) will set specific for "Main Income"
+        *       only work for EXPENSE & INCOME type, doesn't work for TRANSFERINCOME/TRANSFEREXPENSE
+        * @return the summary of specified params
+         */
         public static Double getMonthSummary(String type, int month, String scope, int specificAccountId)
-        //-- type: 'INCOME', 'EXPENSE',
-        //-- month is month number 1=jan, 2=feb, 3=mar
-        //--    or relative to current month 0=thismonth -1=last month, -2 before last month
-        //-- scope is "BETWEEN" or "BEFORE" or "ALL",
-        // --     between is this month only, before is before this month, all is for no date filter
-        //-- specific account is passed non (-1) if want to get only specific account INCOME/EXPENSE
-        // -- like passing (3) will set specific for "Main Income"
-        //--    only work for EXPENSE & INCOME type, doesn't work for TRANSFERINCOME/TRANSFEREXPENSE
         {
             String accountFilter;
             if (specificAccountId!=-1 && (type.equals("INCOME") || type.equals("EXPENSE")))
