@@ -42,8 +42,8 @@ public class MainActivity extends AppCompatActivity {
     static int dbv_baseAccount_id;
     static int baseAccount_pos;//--page position
     public static int closeboook_date;
-    public static int reportPickedMonth;
-    public static int reportPickedYear;
+    public static int reportPickedMonth=0;
+    public static int reportPickedYear=0;
     static String dbv_baseAccount_name;
     final static int ROOM_ADDEXPENSE_ID = 0;
     final static int ROOM_ADDINCOME_ID = 1;
@@ -189,8 +189,10 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         final Calendar c = Calendar.getInstance();
-        reportPickedYear = c.get(Calendar.YEAR);
-        reportPickedMonth = c.get(Calendar.MONTH) +1;
+        if (reportPickedYear==0)
+            reportPickedYear = c.get(Calendar.YEAR);
+        if (reportPickedMonth==0)
+            reportPickedMonth = c.get(Calendar.MONTH) +1;
         adRequest = new AdRequest.Builder().addTestDevice("E05BA7C7DB8B7BFC90E0ECE539108CDA").build();
 
 
@@ -433,11 +435,12 @@ public class MainActivity extends AppCompatActivity {
                 String cbdate = String.format("%02d", closeboook_date);
                 if (Integer.valueOf(startDay) < closeboook_date) {
                     select = "WHERE date BETWEEN DATE('" + year + "-" + month + "-" + cbdate  + "', '-1 month') AND " +
-                            "DATE('" + startYear + "-" + month + "-" + cbdate  + "', '-1 month', '+1 month', '-1 day')";
+                            "DATE('" + year + "-" + month + "-" + cbdate  + "', '-1 month', '+1 month', '-1 day')";
                 } else {
                     select = "WHERE date BETWEEN DATE('" + year + "-" + month + "-" + cbdate  + "') AND " +
-                            "DATE('" + startYear + "-" + month + "-" + cbdate  + "', '+1 month', '-1 day')";
+                            "DATE('" + year + "-" + month + "-" + cbdate  + "', '+1 month', '-1 day')";
                 }
+
 
 
                 int y = Integer.valueOf(year);
@@ -449,7 +452,7 @@ public class MainActivity extends AppCompatActivity {
                 Cursor dbc_specific = dbmain.rawQuery("SELECT date FROM incomesexpenses "+select,null);
                 if (dbc_specific.getCount()>0) {
                     String todate = ""+y+"-"+String.format("%02d",m)+"-"+cbdate;
-                    debugToast(todate);
+                    //debugToast(todate);
                     Cursor dbc_intodate = dbmain.rawQuery("SELECT date('"+todate+"', '-1 day')", null);
                     dbc_intodate.moveToNext();
                     String intodate = dbc_intodate.getString(0);
@@ -462,12 +465,21 @@ public class MainActivity extends AppCompatActivity {
 
                 year = String.format("%02d",y);
                 month = String.format("%02d",m);
-                if (y>thisYear)
+                if (y>thisYear) {
+                    //debugToast("stopped due "+y+"..."+thisYear+" and "+m+"..."+thisMonth);
+                    //debugToast(select);
                     break;
-                else if (y==thisYear && m>thisMonth)
+                }
+                else if (y==thisYear && m>thisMonth){
+                    //debugToast("stopped due "+y+"..."+thisYear+" and "+m+"..."+thisMonth);
+                    //debugToast(select);
                     break;
-                else if (y==thisYear && m==thisMonth && closeboook_date>thisDay)
+                }
+                else if (y==thisYear && m==thisMonth && closeboook_date>thisDay){
+                    //debugToast("stopped due "+y+"..."+thisYear+" and "+m+"..."+thisMonth);
+                    //debugToast(select);
                     break;
+                }
             }
         }
         dbc_mostearly.close();
@@ -490,6 +502,8 @@ public class MainActivity extends AppCompatActivity {
             ((LinearLayout) findViewById(R.id.ll_ButtonWrapper)).setVisibility(View.VISIBLE);
         }catch (Exception e){}
         PlaceholderFragment.refreshPage();
+        refreshBaseAccount();
+        resetRoom();
     }
     public void reportDraw()
     {
@@ -533,6 +547,8 @@ public class MainActivity extends AppCompatActivity {
                             }catch (Exception e){}
                         }
 
+                        firstRefresh = 1;
+                        //debugToast("the year to show is "+reportPickedYear+"-"+reportPickedMonth);
                         PlaceholderFragment.refreshPage();
                         refreshBaseAccount();
                         resetRoom();
@@ -803,11 +819,36 @@ public class MainActivity extends AppCompatActivity {
         }
         public static void refreshPage()
         {
+            //firstRefresh = 0;
             updateBalanceTM();
             showReport();
             ((Button) rootView.findViewById(R.id.bt_closebookchange)).setText("" + MainActivity.closeboook_date + " to " + MainActivity.closeboook_date);
         }
-        /*
+
+        /**
+         * getMonthSummary with specificBaseAccountId filter
+         * calculates per month(period) summary
+         * @param type: 'INCOME', 'EXPENSE',
+         * @param month is month number 1=jan, 2=feb, 3=mar
+         *       or relative to current month 0=thismonth -1=last month, -2 before last month
+         * @param scope is "BETWEEN" or "BEFORE" or "ALL",
+         *       between is this month only, before is before this month, all is for no date filter
+         * @param specificAccountId specific account is passed non (-1) if want to get only specific account INCOME/EXPENSE
+         *       like passing (3) will set specific for "Main Income"
+         *       only work for EXPENSE & INCOME type, doesn't work for TRANSFERINCOME/TRANSFEREXPENSE
+         * @param specificBaseAccountId passed non (-1) to set specificBaseAccountId filter
+         * @return the summary of specified params
+         */
+        public static Double getMonthSummary(String type, int month, String scope, int specificAccountId, int specificBaseAccountId)
+        {
+            int backupBaseAccountId = privateBaseAccountId;
+            Double result;
+            privateBaseAccountId = specificBaseAccountId;
+            result = getMonthSummary(type, month, scope, specificAccountId);
+            privateBaseAccountId = backupBaseAccountId;
+            return result;
+        }
+        /**
         * calculates per month(period) summary
         * @param type: 'INCOME', 'EXPENSE',
         * @param month is month number 1=jan, 2=feb, 3=mar
