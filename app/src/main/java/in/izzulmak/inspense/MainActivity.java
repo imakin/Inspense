@@ -27,6 +27,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -291,15 +292,76 @@ public class MainActivity extends AppCompatActivity {
         }
         dbc_Base.close();
     }
+    /**
+     * Optional feature to backup database to firebase
+     * @param item related to menu selection triggered this
+     * TODO: use dialog and inflat, because only one setView and it applies the whole dialog
+     * TODO: check Identifier is authenticated or not
+     */
+    public void saveInspense(MenuItem item) {
+        final AlertDialog.Builder inputBuilder = new AlertDialog.Builder(this);
+        final EditText et_id = new EditText(this);
+        final EditText et_password = new EditText(this);
+        final TextView tv_title = new TextView(this);
 
-    public void saveInspense(MenuItem item)
-    {
+        tv_title.setText("Please input your unique Identifier");
+        inputBuilder.setView(tv_title);
+        inputBuilder.setView(et_id);
+        inputBuilder.setCancelable(false);
+        class input_class implements DialogInterface.OnClickListener{
+            MainActivity mainActivity;
+            input_class(MainActivity main_activity)
+            {
+                mainActivity = main_activity;
+            }
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                CharSequence warning = "Wrong password auth"; // TODO auth this
+                String target_id = et_id.getText().toString();
+                warning = target_id;
+                if (!target_id.matches("")) {
+                }
+                mainActivity.saveInspenseDo(target_id);
+                Toast toast = Toast.makeText(getApplicationContext(), warning, Toast.LENGTH_SHORT);
+                toast.show();
+            }
+        };
+        inputBuilder.setPositiveButton("OK", new input_class(this)
+        );
+        inputBuilder.setNegativeButton("Cancel",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        dialogInterface.cancel();
+                    }
+                }
+        );
+        AlertDialog inputDialog = inputBuilder.create();
+        inputDialog.show();
+    }
+
+    /**
+     * The saving process after done the dialog. Called by MainActivity.saveInspense(MenuItem)
+     * with no target_id set, default to current phone android id
+     * @see MainActivity.saveInspense
+     */
+    public void saveInspenseDo() {
+        String thisphid = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+        saveInspenseDo(thisphid);
+    }
+
+    /**
+     * The saving process after done the dialog. Called by MainActivity.saveInspense(MenuItem)
+     * @param target_id the identifier of the data to be saved on cloud
+     * @see MainActivity.saveInspense
+     */
+    public void saveInspenseDo(String target_id) {
         /* firebase do backup */
         Firebase fb_ref = new Firebase("https://inspense.firebaseio.com/");
-        String thisphid = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        Firebase fb_thisref = fb_ref.child(thisphid);
+        Firebase fb_thisref = fb_ref.child(target_id);
         Cursor dbc_datamaster = dbmain.rawQuery("SELECT name FROM sqlite_master WHERE type='table'",null);
         while (dbc_datamaster.moveToNext())
+
         {
             String dbv_table = dbc_datamaster.getString(0);
             Cursor dbc_datatable = dbmain.rawQuery("SELECT * FROM " + dbv_table + "", null);
