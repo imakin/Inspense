@@ -1,24 +1,19 @@
 package in.izzulmak.inspense;
 
 import android.app.AlertDialog;
-import android.app.Dialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.database.Cursor;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import org.w3c.dom.Text;
+import in.izzulmak.inspense.input_listeners.ILCancel;
+
+//import in.izzulmak.inspense.input_listeners.Cancel;
 
 public class AccountActivity extends AppCompatActivity {
     public static String EXTRA_IS_EDIT = "v_is_edit";
@@ -80,14 +75,15 @@ public class AccountActivity extends AppCompatActivity {
                     }
                 }
             );
-        inputBuilder.setNegativeButton("Cancel",
+        inputBuilder.setNegativeButton("Cancel", ILCancel.get());
+                /*
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         dialogInterface.cancel();
                     }
                 }
-        );
+        );*/
         AlertDialog inputDialog = inputBuilder.create();
         inputDialog.show();
     }
