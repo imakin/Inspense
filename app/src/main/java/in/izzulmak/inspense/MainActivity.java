@@ -41,6 +41,8 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.InterstitialAd;
 
+import org.w3c.dom.Text;
+
 import in.izzulmak.inspense.input_listeners.ILCancel;
 import in.izzulmak.inspense.input_listeners.ILSaveInspenseOk;
 import in.izzulmak.inspense.main_activity.MAPlaceholderFragment;
@@ -48,7 +50,7 @@ import in.izzulmak.inspense.main_activity.MASectionsPagerAdapter;
 
 
 public class MainActivity extends AppCompatActivity {
-
+    public static final boolean DEBUG_ENABLED = true;
     public static int dbv_baseAccount_id;
     public static int baseAccount_pos;//--page position
     public static int closeboook_date;
@@ -310,7 +312,6 @@ public class MainActivity extends AppCompatActivity {
      * Optional feature to backup database to firebase
      * @param item related to menu selection triggered this
      * TODO: use dialog and inflat, because only one setView and it applies the whole dialog
-     * TODO: check Identifier is authenticated or not
      */
     public void saveInspense(MenuItem item) {
         final AlertDialog.Builder inputBuilder = new AlertDialog.Builder(this);
@@ -603,31 +604,33 @@ public class MainActivity extends AppCompatActivity {
                         reportPickedMonth = Ctrl.getMonthNum(pickeddate);
                         try {
                             ((TextView) findViewById(R.id.tv_Summary)).setText("Report for\n" + pickeddate.replaceAll("\\n", " "));
-                        }catch (Exception e){}
-                        MAPlaceholderFragment.summaryFor = "Report for\n"+pickeddate.replaceAll("\\n"," ");
+                        } catch (Exception e) {
+                        }
+                        MAPlaceholderFragment.summaryFor = "Report for\n" + pickeddate.replaceAll("\\n", " ");
 
-                        if (item==(dategroup.length-1))
-                        {
+                        if (item == (dategroup.length - 1)) {
                             //-- this means it is current period
                             MAPlaceholderFragment.actionIsHidden = false;
                             MAPlaceholderFragment.showAction();
-                            try{
+                            try {
                                 ((Button) findViewById(R.id.bt_closeReport)).setVisibility(View.INVISIBLE);
-                                }catch (Exception e){}
-                            try{
+                            } catch (Exception e) {
+                            }
+                            try {
                                 ((LinearLayout) findViewById(R.id.ll_ButtonWrapper)).setVisibility(View.VISIBLE);
-                            }catch (Exception e){}
-                        }
-                        else
-                        {
+                            } catch (Exception e) {
+                            }
+                        } else {
                             MAPlaceholderFragment.actionIsHidden = true;
                             MAPlaceholderFragment.hideAction();
-                            try{
+                            try {
                                 ((Button) findViewById(R.id.bt_closeReport)).setVisibility(View.VISIBLE);
-                            }catch (Exception e){}
-                            try{
+                            } catch (Exception e) {
+                            }
+                            try {
                                 ((LinearLayout) findViewById(R.id.ll_ButtonWrapper)).setVisibility(View.GONE);
-                            }catch (Exception e){}
+                            } catch (Exception e) {
+                            }
                         }
 
                         firstRefresh = 1;
@@ -659,7 +662,13 @@ public class MainActivity extends AppCompatActivity {
 
     public void debugToast(String text)
     {
+        if (!MainActivity.DEBUG_ENABLED)
+            return;
         Toast toast = Toast.makeText(getApplicationContext(),text, Toast.LENGTH_SHORT);
         toast.show();
+    }
+
+    public void setMessageBar(String text){
+        ((TextView) findViewById(R.id.tv_Message)).setText(text);
     }
 }

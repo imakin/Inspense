@@ -16,20 +16,26 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/tv_Accountname" />
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="fill_parent"
         android:layout_height="42dp"
-        android:gravity="right">
+        android:orientation="horizontal">
         <Button
             android:layout_width="42dp"
             android:layout_height="42dp"
             android:layout_gravity="end"
+            android:layout_alignParentRight="true"
             android:text="x"
             android:id="@+id/bt_closeReport"
             android:visibility="invisible"
             android:onClick="closeReport"
             />
-    </LinearLayout>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="42dp"
+            android:layout_toLeftOf="@id/bt_closeReport"
+            android:id="@+id/tv_Message"/>
+    </RelativeLayout>
     <LinearLayout
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"

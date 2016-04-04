@@ -6,6 +6,7 @@ import android.text.InputType;
 import android.widget.EditText;
 
 import in.izzulmak.inspense.MainActivity;
+import in.izzulmak.inspense.main_activity.model.ModelSaveInspense;
 
 /**
  * Created by Izzulmakin on 24/03/16.
@@ -59,7 +60,8 @@ public class ILSaveInspenseOk implements DialogInterface.OnClickListener {
         }
         else {
             String target_pw = et_input.getText().toString();
-            mainActivity.saveInspenseDo(targetAuthId, target_pw);
+            ModelSaveInspense.object().saveInspenseDo(targetAuthId, target_pw, mainActivity);
+            //mainActivity.saveInspenseDo(targetAuthId, target_pw);
         }
         /*
         CharSequence warning = "Wrong password auth"; // TODO auth this
