@@ -37,9 +37,16 @@
         android:onClick="openSettings"
         />
     <item android:id="@+id/action_save"
-        android:title="Save Data to Migrate Inspense"
-        android:orderInCategory="100"
+        android:title="Save to Server"
+        android:orderInCategory="101"
         app:showAsAction="never"
         android:onClick="saveInspense"
         />
+    <item android:id="@+id/action_load"
+        android:title="Load from Server"
+        android:orderInCategory="102"
+        app:showAsAction="never"
+        android:onClick="loadInspense"
+        />
+
 </menu>

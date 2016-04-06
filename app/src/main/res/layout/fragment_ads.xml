@@ -19,7 +19,8 @@
             <TextView
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:text="Hi, Thanks for testing the apps!\n-Izzulmakin"
+                android:text="Hi, Thanks for using the apps!\n-Izzulmakin"
+                android:id="@+id/tv_Ads_message"
                 />
 
             <com.google.android.gms.ads.AdView

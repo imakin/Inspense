@@ -1,6 +1,5 @@
-package in.izzulmak.inspense.main_activity.model;
+package in.izzulmak.inspense.main_activity.server;
 
-import android.accounts.Account;
 import android.database.Cursor;
 
 import com.firebase.client.DataSnapshot;
@@ -14,25 +13,31 @@ import java.util.Map;
 import in.izzulmak.inspense.MainActivity;
 
 /**
- * Created by pingsan on 27/03/16.
+ * Created by Izzulmakin on 27/03/16.
+ * TODO: encrypt data based on password
+ * TODO: desktop client
  */
-public class ModelSaveInspense {
-    private static ModelSaveInspense self = null;
+public class SaveModel {
+    private static SaveModel self = null;
 
-    protected ModelSaveInspense() {
+    protected SaveModel() {
 
     }
 
-    public static ModelSaveInspense object() {
+    /**
+     * get singleton
+     * @return this object singleton
+     */
+    public static SaveModel object() {
         if (self == null)
-            self = new ModelSaveInspense();
+            self = new SaveModel();
         return self;
     }
 
     /**
-     * The checking before saving process. Called by ILSaveInspenseOk.onClick
+     * The checking before saving process. Called by SaveListenerOk.onClick
      *
-     * @param target_id the identifier of the data to be saved on cloud
+     * @param target_id the user id owning the data to be saved on cloud
      * @param target_pw the password for given target_id
      * @param mref MainActivity object reference
      */
@@ -40,7 +45,7 @@ public class ModelSaveInspense {
         /* firebase do backup */
         Firebase fb_ref = new Firebase("https://inspense.firebaseio.com/");
         final Firebase fb_thisref = fb_ref.child(target_id);
-        //fb_thisref.setValue(target_pw);
+
         class password_check implements ValueEventListener {
             MainActivity sub_mainref;
             Firebase fbref;

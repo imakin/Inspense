@@ -1,5 +1,6 @@
 package in.izzulmak.inspense;
 
+import android.app.AlertDialog;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.support.v7.app.ActionBarActivity;
@@ -10,7 +11,10 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import in.izzulmak.inspense.input_listeners.ILCancel;
+import in.izzulmak.inspense.main_activity.server.LoadListenerOk;
 
+//TODO: This deprecated
 public class DebugActivity extends ActionBarActivity {
 
     @Override
@@ -69,5 +73,20 @@ public class DebugActivity extends ActionBarActivity {
         }
 
         return;
+    }
+    /**
+     * Optional feature to replace current database with the one from server
+     * @param item related to menu selection that triggered this
+     */
+    public void loadInspense(MenuItem item) {
+        final AlertDialog.Builder inputBuilder = new AlertDialog.Builder(this);
+        final EditText et_id = new EditText(this);
+
+        inputBuilder.setView(et_id);
+        inputBuilder.setCancelable(true);
+        inputBuilder.setPositiveButton("Auth ID", new LoadListenerOk(this, et_id));
+        inputBuilder.setNegativeButton("Cancel", ILCancel.get());
+        AlertDialog inputDialog = inputBuilder.create();
+        inputDialog.show();
     }
 }

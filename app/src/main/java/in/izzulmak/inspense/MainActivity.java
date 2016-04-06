@@ -1,9 +1,7 @@
 package in.izzulmak.inspense;
 
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Locale;
 
 
 import android.app.Activity;
@@ -12,39 +10,25 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.provider.Settings;
-import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.os.Bundle;
 import android.support.v4.view.ViewPager;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.firebase.client.DataSnapshot;
 import com.firebase.client.Firebase;
-import com.firebase.client.FirebaseError;
-import com.firebase.client.MutableData;
-import com.firebase.client.Transaction;
-import com.firebase.client.ValueEventListener;
 import com.google.android.gms.ads.AdRequest;
-import com.google.android.gms.ads.AdView;
-import com.google.android.gms.ads.InterstitialAd;
-
-import org.w3c.dom.Text;
 
 import in.izzulmak.inspense.input_listeners.ILCancel;
-import in.izzulmak.inspense.input_listeners.ILSaveInspenseOk;
+import in.izzulmak.inspense.main_activity.server.LoadListenerOk;
+import in.izzulmak.inspense.main_activity.server.SaveListenerOk;
 import in.izzulmak.inspense.main_activity.MAPlaceholderFragment;
 import in.izzulmak.inspense.main_activity.MASectionsPagerAdapter;
 
@@ -89,14 +73,15 @@ public class MainActivity extends AppCompatActivity {
 
         dbmain = openOrCreateDatabase(getResources().getString(R.string.databasename),MODE_PRIVATE,null);
 
-
         /* reset
         dbmain.execSQL("DROP TABLE IF EXISTS accounts;");
-        dbmain.execSQL("DROP TABLE IF EXISTS account_balances;");
         dbmain.execSQL("DROP TABLE IF EXISTS incomesexpenses;");
         dbmain.execSQL("DROP TABLE IF EXISTS settings;"); //*/
         Cursor dbc_Accounttable = dbmain.rawQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='accounts';",null);
-        if (dbc_Accounttable.getCount()<1)
+
+        if (dbc_Accounttable.getCount()<1 ||
+                (dbc_Accounttable.getCount()>0 && (dbmain.rawQuery("SELECT id FROM accounts", null).getCount()<1))
+           )
         {
             //-- no table yet, let's create all of them
             dbmain.execSQL("CREATE TABLE IF NOT EXISTS accounts(id INT, name VARCHAR, type VARCHAR, balance INT, enabled BOOLEAN)"); //-- Main accounts
@@ -310,7 +295,7 @@ public class MainActivity extends AppCompatActivity {
     }
     /**
      * Optional feature to backup database to firebase
-     * @param item related to menu selection triggered this
+     * @param item related to menu selection that triggered this
      * TODO: use dialog and inflat, because only one setView and it applies the whole dialog
      */
     public void saveInspense(MenuItem item) {
@@ -319,90 +304,28 @@ public class MainActivity extends AppCompatActivity {
 
         inputBuilder.setView(et_id);
         inputBuilder.setCancelable(true);
-        inputBuilder.setPositiveButton("Auth ID", new ILSaveInspenseOk(this, et_id));
+        inputBuilder.setPositiveButton("Auth ID", new SaveListenerOk(this, et_id));
         inputBuilder.setNegativeButton("Cancel", ILCancel.get());
         AlertDialog inputDialog = inputBuilder.create();
         inputDialog.show();
     }
 
     /**
-     * The saving process after done the dialog. Called by MainActivity.saveInspense(MenuItem)
-     * with no target_id set, default to current phone android id
+     * Optional feature to replace current database with the one from server
+     * @param item related to menu selection that triggered this
      */
-    public void saveInspenseDo() {
-        String thisphid = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
-        String pw = "no password";/* firebase do backup */
+    public void loadInspense(MenuItem item) {
+        final AlertDialog.Builder inputBuilder = new AlertDialog.Builder(this);
+        final EditText et_id = new EditText(this);
 
-        Firebase fb_ref = new Firebase("https://inspense.firebaseio.com/");
-        Firebase fb_thisref = fb_ref.child(thisphid);
-        Cursor dbc_datamaster = dbmain.rawQuery("SELECT name FROM sqlite_master WHERE type='table'",null);
-        while (dbc_datamaster.moveToNext())
-        {
-            String dbv_table = dbc_datamaster.getString(0);
-            Cursor dbc_datatable = dbmain.rawQuery("SELECT * FROM " + dbv_table + "", null);
-            int dbrow = 0;
-            while(dbc_datatable.moveToNext()) {
-                for (int i = 0; i < dbc_datatable.getColumnCount(); i++) {
-                    fb_thisref.
-                            child(dbv_table).
-                            child(Integer.toString(dbrow)).
-                            child("col"+i).
-                            setValue(dbc_datatable.getString(i));
-                }
-                dbrow += 1;
-            }
-            dbc_datatable.close();
-        }
-        dbc_datamaster.close();
-        debugToast("Data Saved (using your internet)");
+        inputBuilder.setView(et_id);
+        inputBuilder.setCancelable(true);
+        inputBuilder.setPositiveButton("Auth ID", new LoadListenerOk(this, et_id));
+        inputBuilder.setNegativeButton("Cancel", ILCancel.get());
+        AlertDialog inputDialog = inputBuilder.create();
+        inputDialog.show();
     }
 
-    /**
-     * The saving process after done the dialog. Called by MainActivity.saveInspense(MenuItem)
-     * @param target_id the identifier of the data to be saved on cloud
-     */
-    public void saveInspenseDo(String target_id, final String target_pw) {
-        /* firebase do backup */
-        Firebase fb_ref = new Firebase("https://inspense.firebaseio.com/");
-        Firebase fb_thisref = fb_ref.child(target_id);
-        //fb_thisref.setValue(target_pw);
-        class password_check implements ValueEventListener {
-            @Override
-            public void onDataChange(DataSnapshot snapshot) {
-                if (snapshot.getValue().toString().equals(target_pw))
-                    debugToast("Auth success");
-                else
-                    debugToast("Auth failed");
-            }
-            @Override
-            public void onCancelled(FirebaseError firebaseError) {
-                debugToast("Error. Can't get to the server" + firebaseError.getMessage());
-            }
-        };
-        fb_thisref.addValueEventListener(new password_check());
-        /*
-        Cursor dbc_datamaster = dbmain.rawQuery("SELECT name FROM sqlite_master WHERE type='table'",null);
-        while (dbc_datamaster.moveToNext())
-        {
-            String dbv_table = dbc_datamaster.getString(0);
-            Cursor dbc_datatable = dbmain.rawQuery("SELECT * FROM " + dbv_table + "", null);
-            int dbrow = 0;
-            while(dbc_datatable.moveToNext()) {
-                for (int i = 0; i < dbc_datatable.getColumnCount(); i++) {
-                    fb_thisref.
-                            child(dbv_table).
-                            child(Integer.toString(dbrow)).
-                            child("col"+i).
-                            setValue(dbc_datatable.getString(i));
-                }
-                dbrow += 1;
-            }
-            dbc_datatable.close();
-        }
-        dbc_datamaster.close();
-        debugToast("Data Saved (using your internet)");
-        */
-    }
     public void gotoDebug(MenuItem item)
     {
 //        baseAccount_pos = mViewPager.getCurrentItem();

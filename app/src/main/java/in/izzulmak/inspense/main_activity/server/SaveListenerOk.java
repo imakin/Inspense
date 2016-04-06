@@ -1,4 +1,4 @@
-package in.izzulmak.inspense.input_listeners;
+package in.izzulmak.inspense.main_activity.server;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -6,12 +6,12 @@ import android.text.InputType;
 import android.widget.EditText;
 
 import in.izzulmak.inspense.MainActivity;
-import in.izzulmak.inspense.main_activity.model.ModelSaveInspense;
+import in.izzulmak.inspense.input_listeners.ILCancel;
 
 /**
  * Created by Izzulmakin on 24/03/16.
  */
-public class ILSaveInspenseOk implements DialogInterface.OnClickListener {
+public class SaveListenerOk implements DialogInterface.OnClickListener {
     private MainActivity mainActivity;
     private EditText et_input;
     private boolean isAuthId;
@@ -23,7 +23,7 @@ public class ILSaveInspenseOk implements DialogInterface.OnClickListener {
      * @param main_activity the MainActivity reference
      * @param input EditText of input reference
      */
-    public ILSaveInspenseOk(MainActivity main_activity, EditText input)
+    public SaveListenerOk(MainActivity main_activity, EditText input)
     {
         mainActivity = main_activity;
         et_input = input;
@@ -36,7 +36,7 @@ public class ILSaveInspenseOk implements DialogInterface.OnClickListener {
      * @param input EditText of input reference
      * @param auth_id current step is authenticating password, auth_id shall be defined.
      */
-    public ILSaveInspenseOk(MainActivity main_activity, EditText input, String auth_id)
+    public SaveListenerOk(MainActivity main_activity, EditText input, String auth_id)
     {
         mainActivity = main_activity;
         et_input = input;
@@ -46,6 +46,7 @@ public class ILSaveInspenseOk implements DialogInterface.OnClickListener {
     @Override
     public void onClick(DialogInterface dialogInterface, int i) {
         if (isAuthId) {
+            //-- currently got ID only
             String target_id = et_input.getText().toString();
             final AlertDialog.Builder inputBuilder = new AlertDialog.Builder(mainActivity);
             final EditText et_password = new EditText(mainActivity);
@@ -53,23 +54,16 @@ public class ILSaveInspenseOk implements DialogInterface.OnClickListener {
 
             inputBuilder.setView(et_password);
             inputBuilder.setCancelable(true);
-            inputBuilder.setPositiveButton("Auth Password", new ILSaveInspenseOk(mainActivity, et_password, target_id));
+            inputBuilder.setPositiveButton("Auth Password", new SaveListenerOk(mainActivity, et_password, target_id));
             inputBuilder.setNegativeButton("Cancel", ILCancel.get());
             AlertDialog inputDialog = inputBuilder.create();
             inputDialog.show();
         }
         else {
+            //-- got both ID and password
             String target_pw = et_input.getText().toString();
-            ModelSaveInspense.object().saveInspenseDo(targetAuthId, target_pw, mainActivity);
+            SaveModel.object().saveInspenseDo(targetAuthId, target_pw, mainActivity);
             //mainActivity.saveInspenseDo(targetAuthId, target_pw);
         }
-        /*
-        CharSequence warning = "Wrong password auth"; // TODO auth this
-        warning = target_id;
-        if (!target_id.matches("")) {
-        }
-        mainActivity.saveInspenseDo(target_id);
-        mainActivity.debugToast(warning.toString());
-       */
     }
 };

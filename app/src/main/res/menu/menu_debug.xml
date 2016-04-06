@@ -4,4 +4,10 @@
     tools:context="in.izzulmak.inpenseexcomeoutsight.DebugActivity">
     <item android:id="@+id/action_settings" android:title="@string/action_settings"
         android:orderInCategory="100" app:showAsAction="never" />
+    <item android:id="@+id/action_load"
+        android:title="Load from Server"
+        android:orderInCategory="102"
+        app:showAsAction="never"
+        android:onClick="loadInspense"
+        />
 </menu>

@@ -122,6 +122,7 @@ public class MAPlaceholderFragment extends Fragment {
     private void requestNewInterstitial() {
         AdRequest adRequest = new AdRequest.Builder()
                 .addTestDevice("E05BA7C7DB8B7BFC90E0ECE539108CDA")
+                .addTestDevice("C4F539AAF06BC38EF65C8A0564DC2C10")
                 .build();
 
         mInterstitialAd.loadAd(adRequest);
