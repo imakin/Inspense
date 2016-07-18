@@ -85,9 +85,12 @@ public class MainActivity extends AppCompatActivity {
         {
             //-- no table yet, let's create all of them
             dbmain.execSQL("CREATE TABLE IF NOT EXISTS accounts(id INT, name VARCHAR, type VARCHAR, balance INT, enabled BOOLEAN)"); //-- Main accounts
-            dbmain.execSQL("CREATE TABLE IF NOT EXISTS account_balances(id INT, base_account_id INT, balance_before INT, balance INT, date DATE)");
+            //dbmain.execSQL("CREATE TABLE IF NOT EXISTS account_balances(id INT, base_account_id INT, balance_before INT, balance INT, date DATE)");
             dbmain.execSQL("CREATE TABLE IF NOT EXISTS incomesexpenses(id INT, base_account_id INT, from_account_id INT, description VARCHAR, type VARCHAR, amount INT, date DATE)");
             dbmain.execSQL("CREATE TABLE IF NOT EXISTS settings(name VARCHAR, value VARCHAR)");
+
+            dbmain.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS id ON accounts (id)");
+            dbmain.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS id ON incomesexpenses (id)");
 
             dbmain.execSQL("INSERT INTO accounts VALUES(1, 'Cash in Hand', 'BASE', 0, 1)");
             dbmain.execSQL("INSERT INTO accounts VALUES(2, 'Bank', 'BASE', 0 ,1)");

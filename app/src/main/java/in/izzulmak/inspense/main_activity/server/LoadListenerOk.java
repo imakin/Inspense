@@ -2,10 +2,12 @@ package in.izzulmak.inspense.main_activity.server;
 
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.text.InputType;
 import android.widget.EditText;
 
+import in.izzulmak.inspense.DebugActivity;
 import in.izzulmak.inspense.MainActivity;
 import in.izzulmak.inspense.input_listeners.ILCancel;
 
@@ -64,6 +66,9 @@ public class LoadListenerOk implements DialogInterface.OnClickListener {
             //-- got both ID and password
             String target_pw = et_input.getText().toString();
             LoadModel.object().loadInspenseDo(targetAuthId, target_pw, caller_activity);
+
+            Intent mi = new Intent(caller_activity, DebugActivity.class);
+            caller_activity.startActivity(mi);
         }
     }
 }

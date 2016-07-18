@@ -43,12 +43,24 @@
             android:onClick="toggleExpense"
             android:id="@+id/sw_Addexpense_Switch"
             android:layout_gravity="center_horizontal" />
-
-        <TextView
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:text="@string/amount"
-            android:id="@+id/tv_Addexpense_Amount"/>
+            android:orientation="horizontal">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/amount"
+                android:id="@+id/tv_Addexpense_Amount"/>
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Make it to this value"
+                android:id="@+id/bt_Addexpense_AmountMakeItTo"
+                style="@style/Base.Widget.AppCompat.Button.Borderless"
+                android:onClick="makeItTo"/>
+            
+        </LinearLayout>
 
         <EditText
             android:layout_width="fill_parent"

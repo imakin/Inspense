@@ -119,7 +119,7 @@ public class LoadModel {
                 //    sub_mainref.setMessageBar("("+i+"/"+n+") loaded");
                 if (this.table.equals("accounts")) {
                     //FirebaseModel.Accounts d = data.getValue(FirebaseModel.Accounts.class);
-                    MainActivity.dbmain.execSQL("INSERT INTO accounts (id, name, type, enabled) VALUES(" +
+                    MainActivity.dbmain.execSQL("INSERT OR REPLACE INTO accounts (id, name, type, enabled) VALUES(" +
                                     "'"+data.child("id").getValue()   +"', " +
                                     "'"+data.child("name").getValue() +"', " +
                                     "'"+data.child("type").getValue() +"', " +
@@ -129,7 +129,7 @@ public class LoadModel {
                 }
                 else if (this.table.equals("incomesexpenses")) {
                     //FirebaseModel.IncomesExpenses d = data.getValue(FirebaseModel.IncomesExpenses.class);
-                    MainActivity.dbmain.execSQL("INSERT INTO incomesexpenses "+
+                    MainActivity.dbmain.execSQL("INSERT OR REPLACE INTO incomesexpenses "+
                                     "(id,base_account_id,from_account_id,description,type,amount,date) "+
                                     "VALUES("+
                                     "'"+data.child("id").getValue()               +"', "+
@@ -144,6 +144,7 @@ public class LoadModel {
                 }
                 //*/
             }
+
         }
         @Override
         public void onCancelled(FirebaseError firebaseError) {

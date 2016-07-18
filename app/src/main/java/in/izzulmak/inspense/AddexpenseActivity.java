@@ -26,6 +26,8 @@ import java.util.Calendar;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 
+import in.izzulmak.inspense.main_activity.MAPlaceholderFragment;
+
 
 public class AddexpenseActivity extends ActionBarActivity {
 
@@ -252,6 +254,33 @@ public class AddexpenseActivity extends ActionBarActivity {
         Intent i = new Intent();
         setResult(RESULT_OK,i);
         finish();
+    }
+
+    /**
+     * calculate expense amount required to make the selected base account balance to the specified value in amount box
+     * @param view view object
+     */
+    public void makeItTo(View view)
+    {
+        EditText amount_box = (EditText) findViewById(R.id.et_Addexpense_Amount);
+        String amount_s = amount_box.getText().toString();
+        Double amount = Double.valueOf(amount_s);
+
+        Double in,transIn;
+        Double ex,transEx;
+        // get month summary, dont specify base account as it is the last selected
+        in = MAPlaceholderFragment.getMonthSummary("INCOME", 0, "BETWEEN", -1,v_BaseAccount_id);
+        ex = MAPlaceholderFragment.getMonthSummary("EXPENSE", 0, "BETWEEN", -1,v_BaseAccount_id);
+        transIn = MAPlaceholderFragment.getMonthSummary("TRANSFERINCOME", 0, "BETWEEN", -1,v_BaseAccount_id);
+        transEx = MAPlaceholderFragment.getMonthSummary("TRANSFEREXPENSE", 0, "BETWEEN", -1,v_BaseAccount_id);
+
+        Double lin = MAPlaceholderFragment.getMonthSummary("INCOME", 0, "BEFORE", -1,v_BaseAccount_id);
+        Double lex = MAPlaceholderFragment.getMonthSummary("EXPENSE", 0, "BEFORE", -1,v_BaseAccount_id);
+        Double ltin = MAPlaceholderFragment.getMonthSummary("TRANSFERINCOME", 0, "BEFORE", -1,v_BaseAccount_id);
+        Double ltex = MAPlaceholderFragment.getMonthSummary("TRANSFEREXPENSE", 0, "BEFORE", -1,v_BaseAccount_id);
+        Double lastbalance = lin +ltin - lex -ltex;
+
+        amount_box.setText(""+(Double.valueOf(lastbalance + in + transIn - ex - transEx - amount).intValue()));
     }
     public void toggleExpense(View view)
     {
