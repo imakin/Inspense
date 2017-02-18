@@ -11,6 +11,7 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import in.izzulmak.inspense.console.ConsoleChangedListener;
 import in.izzulmak.inspense.input_listeners.ILCancel;
 import in.izzulmak.inspense.main_activity.server.LoadListenerOk;
 
@@ -21,6 +22,8 @@ public class DebugActivity extends ActionBarActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_debug);
+        EditText et_debug = (EditText) findViewById(R.id.et_Debug);
+        et_debug.addTextChangedListener(new ConsoleChangedListener(this,et_debug));
     }
 
 

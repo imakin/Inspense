@@ -59,7 +59,7 @@
                 android:id="@+id/bt_Addexpense_AmountMakeItTo"
                 style="@style/Base.Widget.AppCompat.Button.Borderless"
                 android:onClick="makeItTo"/>
-            
+
         </LinearLayout>
 
         <EditText
